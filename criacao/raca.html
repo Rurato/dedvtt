@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criação - Escolha a Raça</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --accent: #e63946;
+            --accent-dim: #7a1e26;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            padding-bottom: 80px; 
+        }
+        h2 { border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
+        
+        .race-list { display: flex; flex-direction: column; gap: 15px; }
+        
+        .race-card {
+            background: var(--card-bg);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        /* Estilo quando a raça está expandida (mostrando sub-raças) */
+        .race-card.expanded {
+            border-color: #555;
+            background-color: #252525;
+        }
+
+        /* Estilo quando a raça (ou sub-raça) é a FINAL escolhida */
+        .race-card.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(230, 57, 70, 0.3);
+        }
+
+        .race-name { font-size: 1.2rem; font-weight: bold; color: var(--accent); display: flex; justify-content: space-between; align-items: center; }
+        .race-bonuses { font-size: 0.9rem; font-weight: bold; margin: 5px 0; color: #fff; }
+        .race-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; white-space: pre-wrap;}
+
+        /* --- ÁREA DAS SUB-RAÇAS --- */
+        .sub-raca-container {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #444;
+            display: none; /* Escondido por padrão */
+        }
+        
+        .race-card.expanded .sub-raca-container {
+            display: block; /* Aparece quando expandido */
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .sub-race-btn {
+            background: #333;
+            border: 1px solid #444;
+            color: #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .sub-race-btn:hover { background: #444; }
+        
+        .sub-race-btn.active {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: white;
+            font-weight: bold;
+        }
+
+        .sub-race-details { font-size: 0.8rem; color: #aaa; font-weight: normal; margin-top: 2px; }
+
+        /* Rodapé */
+        .footer-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: #1a1a1a;
+            padding: 15px;
+            border-top: 1px solid #333;
+            display: flex;
+            justify-content: flex-end;
+            z-index: 100;
+        }
+        .btn-next {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .btn-next.active { opacity: 1; pointer-events: all; }
+        /* Área de escolha de atributos */
+        .attr-selector-container {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #444;
+            display: none; /* Escondido por padrão */
+        }
+        .race-card.expanded .attr-selector-container {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+        .attr-options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .attr-checkbox-label {
+            background: #333;
+            border: 1px solid #444;
+            padding: 8px;
+            text-align: center;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            user-select: none;
+        }
+        /* Quando marcado */
+        .attr-checkbox-label.checked {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: white;
+        }
+        /* Esconder o checkbox real padrão do HTML */
+        .attr-checkbox-label input { display: none; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <h2>1. Escolha sua Raça</h2>
+    <div id="race-container" class="race-list"></div>
+
+    <div class="footer-nav">
+        <button id="btn-next" class="btn-next" onclick="irParaClasse()">Próximo: Classe ></button>
+    </div>
+
+    <script>
+        /* --- 1. CONFIGURAÇÃO DAS RAÇAS E SUB-RAÇAS --- 
+           DICA: Se a raça tiver 'subRacas: []' vazio ou não tiver a propriedade, 
+           ela se comporta como seleção simples (ex: Humano).
+        */
+        const racasDB = [
+            {
+                id: 'anao',
+                nome: 'Anão',
+                bonusDesc: '+2 Con',
+                descricao: `Deslocamento base: 7,5 metros. Seu deslocamento não é reduzido quando estiver usando armadura pesada.\nVisão no Escuro: Enxerga na penumbra a até 18 metros como se fosse luz plena, e no escuro como se fosse na penumbra.\nResiliência Anã: Você possui vantagem em testes de resistência contra venenos e resistência contra dano de veneno. Você possui vantagem em testes de resistência contra venenos e resistência contra dano de veneno.\nTreinamento Anão em Combate: Você tem proficiência com machados de batalha, machadinhas, martelos leves e martelos de guerra.\nIdiomas: Comum e Anão.`,
+                modificadores: { for: 0, des: 0, con: 2, int: 0, sab: 0, car: 0 },
+                deslocamento: 7.5,
+                subRacas: [
+                    {
+                        id: 'anao_colina',
+                        nome: 'Anão da Colina',
+                        detalhes: '+1 Sabedoria, +1 PV por nível',
+                        // Aqui você soma atributos EXTRAS
+                        modificadoresExtras: { sab: 1 },
+                        // Pode adicionar traits específicas aqui
+                        habilidadesExtras: ['Tenacidade Anã'] 
+                    },
+                    {
+                        id: 'anao_montanha',
+                        nome: 'Anão da Montanha',
+                        detalhes: '+2 Força, Proficiência com armaduras leves e medias',
+                        modificadoresExtras: { for: 2 },
+                        habilidadesExtras: ['Treinamento em Armaduras']
+                    }
+                ]
+            },
+            {
+                id: 'elfo',
+                nome: 'Elfo',
+                bonusDesc: '+2 Des',
+                descricao: `Deslocamento base: 9 metros.\nVisão no Escuro: Enxerga na penumbra a até 18 metros como se fosse luz plena, e no escuro como se fosse na penumbra.\nSentidos Aguçados. Você tem proficiência na perícia Percepção.\nAncestral Feérico. Você tem vantagem nos testes de resistência para resistir a ser enfeitiçado e magias não podem colocá-lo para dormir.\nIdiomas: Comum e Élfico`,
+                modificadores: { for: 0, des: 2, con: 0, int: 0, sab: 0, car: 0 },
+                deslocamento: 9,
+                subRacas: [
+                    {
+                        id: 'alto_elfo',
+                        nome: 'Alto Elfo',
+                        detalhes: '+1 Inteligência, 1 Truque de Mago, +1 Idioma, Treinamento Élfico com Armas',
+                        modificadoresExtras: { int: 1 },
+                        habilidadesExtras: ['Truque, Treinamento Élfico, Idioma Adicional']
+                    },
+                    {
+                        id: 'elfo_floresta',
+                        nome: 'Elfo da Floresta',
+                        detalhes: '+1 Sabedoria, Deslocamento 10.5m, Treinamento Élfico com Armas',
+                        modificadoresExtras: { sab: 1 },
+                        habilidadesExtras: ['Pés Ligeiros, Treinamento Élfico']
+                    },
+                    {
+                        id: 'elfo_negro',
+                        nome: 'Elfo Negro (Drow)',
+                        detalhes: '+1 Carisma, Visão no Escuro Superior, Magia Drow, Treinamento Drow com Armas',
+                        modificadoresExtras: { car: 1 },
+                        habilidadesExtras: ['Visão no Escuro Superior, Magia Drow, Treinamento Drow']
+                    }
+                ]
+            },
+            {
+                id: 'humano',
+                nome: 'Humano',
+                bonusDesc: '+1 em todos os atributos',
+                descricao: 'Deslocamento base: 9 metros.\nIdiomas: Comum, +1 a sua escolha',
+                modificadores: { for: 1, des: 1, con: 1, int: 1, sab: 1, car: 1 },
+                deslocamento: 9,
+                subRacas: [] // Humano padrão não tem sub-raça
+            },
+            {
+                id: 'halfling',
+                nome: 'Halfling',
+                bonusDesc: '+2 Des',
+                descricao: `Deslocamento base: 7,5 metros.\nSortudo: Quando você obtiver um 1 natural em uma jogada de ataque, teste de habilidade ou teste de resistência, você pode jogar de novo o dado e deve utilizar o novo resultado.\nBravura: Você tem vantagem em testes de resistência contra ficar amedrontado.\nAgilidade Halfling: Você pode mover-se através do espaço de qualquer criatura que for de um tamanho maior que o seu.\nIdiomas: Comum e Halfling`,
+                modificadores: { for: 0, des: 2, con: 0, int: 0, sab: 0, car: 0 },
+                deslocamento: 7.5,
+                subRacas: [
+                    {
+                        id: 'pes_leves',
+                        nome: 'Pés Leves',
+                        detalhes: '+1 Carisma, Furtividade Natural',
+                        modificadoresExtras: { car: 1 },
+                        habilidadesExtras: ['Furtividade Natural']
+                    },
+                    {
+                        id: 'robusto',
+                        nome: 'Robusto',
+                        detalhes: '+1 Constituição, Resiliência dos Robustos',
+                        modificadoresExtras: { con: 1 },
+                        habilidadesExtras: ['Resiliência dos Robustos']
+                    }
+                ]
+            },
+            {
+                id: 'draconato',
+                nome: 'Draconato',
+                bonusDesc: '+2 For, +1 Car',
+                descricao: `Deslocamento base: 9 metros.\nAncestral Dracônico: Você possui um ancestral dracônico. Escolha um tipo de dragão da tabela Ancestral Dracônico. Sua arma de sopro e resistência a dano são determinadas pelo tipo de dragão, como mostrado na tabela.\nArma de Sopro: Você pode usar uma ação para exalar energia destrutiva. Seu ancestral dracônico determina o tamanho, formado e tipo de dano que você expele. Quando você usa sua arma de sopro, cada criatura na área exalada deve realizar um teste de resistência, o tipo do teste é determinado pelo seu ancestral dracônico. A CD do teste de resistência é 8 + seu modificador de Constituição + seu bônus de proficiência. Uma criatura sofre 2d6 de dano num fracasso e metade desse dano num sucesso. O dano aumenta para 3d6 no 6° nível, 4d6 no 11° nível e 5d6 no 16° nível. Depois de usar sua arma de sopro, você não poderá utilizá-la novamente até completar um descanso curto ou longo.\nResistência a Dano: Você possui resistência ao tipo de dano associado ao seu ancestral dracônico.\nIdiomas: Comum e Draconico`,
+                modificadores: { for: 2, des: 0, con: 0, int: 0, sab: 0, car: 1 },
+                deslocamento: 9,
+                subRacas: [
+                    {
+                        id: 'drac_azul',
+                        nome: 'Azul',
+                        detalhes: 'Dano: Eletrico | Sopro: Linha de 1,5m/9m (Des)',
+                        modificadoresExtras: { },
+                        habilidadesExtras: ['Eletrico']
+                    },
+                    {
+                        id: 'drac_branco',
+                        nome: 'Branco',
+                        detalhes: 'Dano: Frio | Sopro: Cone de 4,5m (Con)',
+                        modificadoresExtras: {},
+                        habilidadesExtras: ['Resistência a Frio', 'Sopro de Gelo']
+                    },
+                    {
+                        id: 'drac_bronze',
+                        nome: 'Bronze',
+                        detalhes: 'Dano: Elétrico | Sopro: Linha de 1,5m/9m (Des)',
+                        modificadoresExtras: {},
+                        habilidadesExtras: ['Resistência a Elétrico', 'Sopro de Raio']
+                    },
+                    {
+                        id: 'drac_cobre',
+                        nome: 'Cobre',
+                        detalhes: 'Dano: Ácido | Sopro: Linha de 1,5m/9m (Des)',
+                        modificadoresExtras: {},
+                        habilidadesExtras: ['Resistência a Ácido', 'Sopro Ácido']
+                    },
+                    {
+                        id: 'drac_latao',
+                        nome: 'Latão',
+                        detalhes: 'Dano: Fogo | Sopro: Linha de 1,5m/9m (Des)',
+                        modificadoresExtras: {},
+                        habilidadesExtras: ['Resistência a Fogo', 'Sopro de Fogo']
+                    },
+                    {
+                        id: 'drac_negro',
+                        nome: 'Negro',
+                        detalhes: 'Dano: Ácido | Sopro: Linha de 1,5m/9m (Des)',
+                        modificadoresExtras: {},
+                        habilidadesExtras: ['Resistência a Ácido', 'Sopro Ácido']
+                    },
+                    {
+                        id: 'drac_ouro',
+                        nome: 'Ouro',
+                        detalhes: 'Dano: Fogo | Sopro: Cone de 4,5m (Des)',
+                        modificadoresExtras: {},
+                        habilidadesExtras: ['Resistência a Fogo', 'Sopro de Fogo']
+                    },
+                    {
+                        id: 'drac_prata',
+                        nome: 'Prata',
+                        detalhes: 'Dano: Frio | Sopro: Cone de 4,5m (Con)',
+                        modificadoresExtras: {},
+                        habilidadesExtras: ['Resistência a Frio', 'Sopro de Gelo']
+                    },
+                    {
+                        id: 'drac_verde',
+                        nome: 'Verde',
+                        detalhes: 'Dano: Veneno | Sopro: Cone de 4,5m (Con)',
+                        modificadoresExtras: {},
+                        habilidadesExtras: ['Resistência a Veneno', 'Sopro Venenoso']
+                    },
+                    {
+                        id: 'drac_vermelho',
+                        nome: 'Vermelho',
+                        detalhes: 'Dano: Fogo | Sopro: Cone de 4,5m (Des)',
+                        modificadoresExtras: {},
+                        habilidadesExtras: ['Resistência a Fogo', 'Sopro de Fogo']
+                    }
+                ]
+            },
+            {
+                id: 'gnomo',
+                nome: 'Gnomo',
+                bonusDesc: '+2 Int',
+                descricao: `Deslocamento base: 7,5 metros.\nVisão no Escuro: Enxerga na penumbra a até 18 metros como se fosse luz plena, e no escuro como se fosse na penumbra.\nEsperteza Gnômica. Você possui vantagem em todos os testes de resistência de Inteligência, Sabedoria e Carisma contra magia\nIdiomas: Comum e Gnômico`,
+                modificadores: { for: 0, des: 0, con: 0, int: 2, sab: 0, car: 0 },
+                deslocamento: 7.5,
+                subRacas: [
+                    {
+                        id: 'gnomo_floresta',
+                        nome: 'Gnomo da floresta',
+                        detalhes: '+1 Destreza, Ilusionista Nato, Falar com Bestas Pequenas',
+                        modificadoresExtras: { des: 1 },
+                        habilidadesExtras: ['Ilusionista Nato']
+                    },
+                    {
+                        id: 'gnomo_rochas',
+                        nome: 'Gnomo das rochas',
+                        detalhes: '+1 Constituição, Conhecimento de Artífice, Engenhoqueiro',
+                        modificadoresExtras: { con: 1 },
+                        habilidadesExtras: ['Conhecimento de Artífice']
+                    }
+                ]
+            },
+            {
+                id: 'meio_elfo',
+                nome: 'Meio Elfo',
+                bonusDesc: '+2 Car, +1 em dois a sua escolha',
+                descricao: `Deslocamento base: 9 metros.\nVisão no Escuro: Enxerga na penumbra a até 18 metros como se fosse luz plena, e no escuro como se fosse na penumbra.\nAncestral Feérico: Você possui vantagem em testes de resistência contra encantamento e magia não pode colocar você pra dormir.\nVersatilidade em Perícia: Você ganha proficiência em duas perícias, à sua escolha\nIdiomas: Comum, Elfico e +1 a sua escolha`,
+                modificadores: { for: 0, des: 0, con: 0, int: 0, sab: 0, car: 2 },
+                deslocamento: 9,
+                pontosParaDistribuir: 2,
+                subRacas: []
+            },
+            {
+                id: 'meio_orc',
+                nome: 'Meio Orc',
+                bonusDesc: '+2 For, +1 Con',
+                descricao: `Deslocamento base: 9 metros.\nVisão no Escuro: Enxerga na penumbra a até 18 metros como se fosse luz plena, e no escuro como se fosse na penumbra.\nAmeaçador: Você adquire proficiência na perícia Intimidação.\nResistência Implacável: Quando você é reduzido a 0 pontos de vida mas não é completamente morto, você pode voltar para 1 ponto de vida. Você não pode usar essa característica novamente até completar um descanso longo.\nAtaques Selvagens: Quando você atinge um ataque crítico com uma arma corpo-a-corpo, você pode rolar um dos dados de dano da arma mais uma vez e adicioná-lo ao dano extra causado pelo acerto crítico.\nIdiomas: Comum e Orc`,
+                modificadores: { for: 2, des: 0, con: 1, int: 0, sab: 0, car: 0 },
+                deslocamento: 9,
+                subRacas: []
+            },
+            {
+                id: 'tiefling',
+                nome: 'Tiefling',
+                bonusDesc: '+1 Int, +2 Car',
+                descricao: `Deslocamento base: 9 metros.\nVisão no Escuro: Enxerga na penumbra a até 18 metros como se fosse luz plena, e no escuro como se fosse na penumbra.\nResistência Infernal: Você possui resistência a dano de fogo. Quando você atingir o 3° nível, você poderá conjurar a magia repreensão infernal como uma magia de 2° nível. Quando você atingir o 5° nível, você também poderá conjurar a magia escuridão. Você precisa terminar um descanso longo para poder usar as magias desse traço novamente. Sua habilidade de conjuração para essas magias é Carisma.\nIdiomas: Comum e Infernal`,
+                modificadores: { for: 0, des: 0, con: 0, int: 1, sab: 0, car: 2 },
+                deslocamento: 9,
+                subRacas: []
+            }
+        ];
+
+        let selecaoFinal = null; // Guardará o objeto completo {raca + subraca}
+
+        // --- 2. RENDERIZAÇÃO ---
+        const container = document.getElementById('race-container');
+        const btnNext = document.getElementById('btn-next');
+
+        function renderizarRacas() {
+            container.innerHTML = '';
+            racasDB.forEach((raca, index) => {
+                const temSubRaca = raca.subRacas && raca.subRacas.length > 0;
+                const temEscolha = raca.pontosParaDistribuir > 0; // Verifica se é tipo Meio-Elfo
+                
+                // --- LÓGICA DE SUB-RAÇAS (Manteve igual) ---
+                let conteudoExtraHTML = '';
+                
+                if(temSubRaca) {
+                    conteudoExtraHTML = `<div class="sub-raca-container">`;
+                    raca.subRacas.forEach(sub => {
+                        conteudoExtraHTML += `
+                            <div class="sub-race-btn" onclick="selecionarSubRaca(event, '${raca.id}', '${sub.id}', this)">
+                                <div>${sub.nome}</div>
+                                <div class="sub-race-details">${sub.detalhes}</div>
+                            </div>`;
+                    });
+                    conteudoExtraHTML += `</div>`;
+                }
+                
+                // --- NOVA LÓGICA: SELETOR DE ATRIBUTOS (Para Meio-Elfo) ---
+                else if(temEscolha) {
+                    conteudoExtraHTML = `
+                        <div class="attr-selector-container" onclick="event.stopPropagation()">
+                            <div style="font-size:0.9rem; color:#fff; margin-bottom:5px;">
+                                Escolha +1 em <b>${raca.pontosParaDistribuir}</b> atributos:
+                            </div>
+                            <div class="attr-options-grid">
+                                ${['for','des','con','int','sab','car'].map(attr => {
+                                    // Meio-elfo já tem Carisma +2, então geralmente não escolhe carisma de novo, mas a regra deixa se o mestre deixar. 
+                                    // Vamos liberar tudo por enquanto.
+                                    return `
+                                        <label class="attr-checkbox-label" id="lbl-${raca.id}-${attr}">
+                                            ${attr.toUpperCase()}
+                                            <input type="checkbox" value="${attr}" onchange="atualizarEscolhas('${raca.id}', ${raca.pontosParaDistribuir}, this)">
+                                        </label>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'race-card';
+                card.id = `card-${raca.id}`;
+                
+                // Se tiver sub-raça OU escolha de atributo, o clique expande
+                const modoExpandir = temSubRaca || temEscolha;
+
+                card.onclick = (e) => interagirRaca(raca.id, modoExpandir, card);
+                
+                card.innerHTML = `
+                    <div class="race-name">
+                        ${raca.nome} 
+                        ${modoExpandir ? '<small style="font-size:0.7rem">▼</small>' : ''}
+                    </div>
+                    <div class="race-bonuses">Bônus: ${raca.bonusDesc}</div>
+                    <div class="race-desc">${raca.descricao}</div>
+                    ${conteudoExtraHTML}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- 3. LÓGICA DE INTERAÇÃO ---
+        
+        // Clicou no Card Principal
+        function interagirRaca(racaId, temSubRaca, cardElement) {
+            // Reseta visual de todos
+            document.querySelectorAll('.race-card').forEach(c => {
+                c.classList.remove('expanded');
+                if(c.id !== `card-${racaId}`) c.classList.remove('selected');
+            });
+
+            atributosEscolhidos = []; 
+            document.querySelectorAll('.attr-checkbox-label').forEach(l => {
+                l.classList.remove('checked');
+                l.querySelector('input').checked = false;
+            });
+
+            if (temSubRaca) {
+                // Modo Expandir: Apenas mostra as sub-raças, não ativa o botão "Próximo" ainda
+                cardElement.classList.add('expanded');
+                // Reseta seleção interna de sub-raça se trocou de raça pai
+                document.querySelectorAll('.sub-race-btn').forEach(b => b.classList.remove('active'));
+                btnNext.classList.remove('active');
+                selecaoFinal = null;
+            } else {
+                // Modo Seleção Direta (Ex: Humano)
+                document.querySelectorAll('.race-card').forEach(c => c.classList.remove('selected'));
+                cardElement.classList.add('selected');
+                
+                const raca = racasDB.find(r => r.id === racaId);
+                // Prepara objeto final (sem sub-raça)
+                selecaoFinal = {
+                    racaBase: raca,
+                    subRaca: null,
+                    modificadoresFinais: raca.modificadores // Copia os base
+                };
+                
+                btnNext.classList.add('active');
+            }
+        }
+
+        // Clicou na Sub-Raça
+        function selecionarSubRaca(event, racaId, subRacaId, btnElement) {
+            event.stopPropagation(); // Impede que o clique feche o card pai
+
+            // Visual: Seleciona botão da sub-raça
+            document.querySelectorAll('.sub-race-btn').forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+            
+            // Visual: Marca o card pai como selecionado também
+            document.querySelectorAll('.race-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById(`card-${racaId}`).classList.add('selected');
+
+            // Lógica de Dados
+            const racaPai = racasDB.find(r => r.id === racaId);
+            const subRaca = racaPai.subRacas.find(s => s.id === subRacaId);
+
+            // Combina os modificadores (Base + Extra)
+            const modsFinais = { ...racaPai.modificadores }; // Clona base
+            if (subRaca.modificadoresExtras) {
+                for (const [attr, valor] of Object.entries(subRaca.modificadoresExtras)) {
+                    modsFinais[attr] = (modsFinais[attr] || 0) + valor;
+                }
+            }
+
+            selecaoFinal = {
+                racaBase: racaPai,
+                subRaca: subRaca,
+                modificadoresFinais: modsFinais
+            };
+
+            btnNext.classList.add('active');
+            console.log("Seleção Atual:", selecaoFinal);
+        }
+
+        function irParaClasse() {
+            if (!selecaoFinal) return;
+            localStorage.setItem('novoPersonagem_raca', JSON.stringify(selecaoFinal));
+            window.location.href = 'classe.html';
+        }
+
+        // Variável auxiliar para guardar as escolhas temporárias (ex: ['for', 'des'])
+        let atributosEscolhidos = [];
+
+        function atualizarEscolhas(racaId, maximo, checkbox) {
+            const label = checkbox.parentElement;
+            const atributo = checkbox.value;
+
+            if (checkbox.checked) {
+                // Tenta adicionar
+                if (atributosEscolhidos.length < maximo) {
+                    atributosEscolhidos.push(atributo);
+                    label.classList.add('checked');
+                } else {
+                    // Impede de marcar se já deu o limite
+                    checkbox.checked = false;
+                    alert(`Você só pode escolher ${maximo} atributos! Desmarque um antes.`);
+                    return; 
+                }
+            } else {
+                // Remove da lista
+                atributosEscolhidos = atributosEscolhidos.filter(a => a !== atributo);
+                label.classList.remove('checked');
+            }
+
+            // --- VALIDAR SE TERMINOU ---
+            const racaPai = racasDB.find(r => r.id === racaId);
+            
+            if (atributosEscolhidos.length === maximo) {
+                // Monta o objeto final com os bônus somados
+                const modsFinais = { ...racaPai.modificadores };
+                
+                // Soma +1 nos escolhidos
+                atributosEscolhidos.forEach(attr => {
+                    modsFinais[attr] = (modsFinais[attr] || 0) + 1;
+                });
+
+                selecaoFinal = {
+                    racaBase: racaPai,
+                    subRaca: null, // Meio-elfo não tem sub
+                    modificadoresFinais: modsFinais,
+                    escolhasFeitas: atributosEscolhidos // Bom guardar isso pra mostrar no resumo depois
+                };
+                
+                btnNext.classList.add('active');
+            } else {
+                // Se desmarcou e ficou incompleto, desativa o botão
+                btnNext.classList.remove('active');
+                selecaoFinal = null;
+            }
+            
+            console.log("Atributos escolhidos:", atributosEscolhidos);
+        }
+
+        renderizarRacas();
+    </script>
+</body>
+</html>

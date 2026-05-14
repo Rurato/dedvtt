@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ficha Mobile D&D</title>
+    <style>
+        :root {
+            --bg-color: #fdfaf3;
+            --card-color: #ffffff;
+            --text-color: #1a1a1a;
+            --accent-color: #b11f2d;
+            --border-color: #d1d1d1;
+            --dnd-red: #e63946;
+        }
+        
+        body {
+            font-family: 'Times New Roman', Times, serif; 
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 10px;
+            margin: 0;
+            max-width: 600px;
+            margin: auto;
+        }
+
+        .u-uppercase { text-transform: uppercase; font-weight: bold; font-size: 0.8rem;}
+
+        input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid #ccc;
+            color: var(--text-color);
+            padding: 5px;
+            font-family: sans-serif;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        input:focus { outline: none; border-bottom: 2px solid var(--accent-color); }
+        input[type="number"] { text-align: center; }
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+        .btn-back {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            font-family: sans-serif;
+        }
+
+        .btn-save {
+            background: var(--accent-color);
+            border: none;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            font-family: sans-serif;
+            font-weight: bold;
+            float: right; /* Fica do lado direito */
+        }
+
+        .header-dnd {
+            border: 1px solid var(--border-color);
+            background-color: var(--card-color);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            clear: both; /* Limpa o float do botão */
+        }
+        .char-header-top { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .char-name-box { flex-grow: 2; border-right: 1px solid var(--border-color); padding-right: 10px;}
+        .char-name-input { font-size: 1.4rem; font-weight: bold; border: none; font-family: 'Times New Roman', Times, serif;}
+        .char-info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .info-group { display: flex; flex-direction: column; }
+        .info-label { font-size: 0.7rem; color: #666; text-transform: uppercase; margin-top: 2px;}
+
+        .combat-stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        .combat-sub-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+        .dnd-box {
+            background: var(--card-color);
+            border: 2px solid var(--accent-color);
+            border-radius: 8px;
+            text-align: center;
+            padding: 5px;
+            position: relative;
+        }
+        .dnd-box-label { font-size: 0.65rem; font-weight: bold; color: var(--accent-color); text-transform: uppercase; display: flex; align-items: center; justify-content: center; height: 2.4em; }
+        .dnd-box-value { font-size: 1.6rem; font-weight: bold; border: none; width: 100%; text-align: center; }
+        
+        .prof-bonus-box {
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+            border: 1px solid var(--border-color); padding: 5px; border-radius: 20px;
+            background-color: var(--card-color);
+        }
+
+        .hp-section {
+            border: 1px solid var(--border-color); background-color: var(--card-color);
+            padding: 10px; border-radius: 8px; margin-bottom: 20px;
+        }
+        .hp-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); margin-bottom: 5px; padding-bottom: 5px;}
+        .hp-current-input { font-size: 1.8rem; font-weight: bold; color: var(--dnd-red); text-align: center; border: 1px solid var(--border-color); border-radius: 4px; width: 60px;}
+        .hp-max-input { width: 50px; font-size: 1rem; text-align: center;}
+
+        .attributes-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;}
+        .attr-card {
+            background: var(--card-color); border: 1px solid var(--border-color);
+            border-radius: 8px; text-align: center; padding: 10px 5px; position: relative;
+        }
+        .attr-label { font-weight: bold; color: var(--accent-color); font-size: 0.8rem;}
+        .attr-mod-box { font-size: 1.8rem; font-weight: bold; border: 1px solid #444; border-radius: 4px; width: 50px; margin: 5px auto; }
+        .attr-score-box {
+            position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+            background: white; border: 1px solid #444; border-radius: 50%; width: 30px; height: 30px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .attr-score-input { font-size: 0.9rem; width: 100%; border: none; text-align: center;}
+
+        .list-container {
+            border: 1px solid var(--border-color);
+            background-color: var(--card-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .list-title { text-align: center; text-transform: uppercase; color: var(--text-color); letter-spacing: 1px; font-size: 0.9rem; margin-top: 0; margin-bottom: 10px; font-weight: bold; }
+        .list-item { display: flex; align-items: center; margin-bottom: 5px; font-family: sans-serif; font-size: 0.85rem; }
+        .prof-dot { appearance: none; width: 12px; height: 12px; border: 1px solid var(--text-color); border-radius: 50%; margin-right: 8px; cursor: pointer; outline: none; background-color: white; }
+        .prof-dot:checked { background-color: var(--text-color); }
+        .list-mod { width: 30px; border: none; border-bottom: 1px solid var(--text-color); text-align: center; margin-right: 8px; padding: 0; font-size: 0.9rem; }
+        .list-name { flex-grow: 1; }
+        .attr-hint { color: #888; font-size: 0.75rem; margin-left: 3px;}
+        .btn-delete {
+        background: none;
+        border: 1px solid #b11f2d;
+        color: #b11f2d;
+        padding: 5px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 10px;
+        font-family: sans-serif;
+        font-weight: bold;
+        float: right;
+    }
+
+    .btn-delete:hover {
+        background-color: #fceaea;
+    }
+
+    /* --- ESTILOS DE ROLAGEM DE DADOS --- */
+        .clickable { 
+            cursor: pointer; 
+            transition: 0.2s; 
+        }
+        .clickable:hover { 
+            color: var(--accent-color); 
+            text-shadow: 0 0 5px rgba(177, 31, 45, 0.3);
+        }
+
+        .modal-overlay {
+            display: none; 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); 
+            justify-content: center; align-items: center; 
+            z-index: 1000;
+        }
+        .modal-content {
+            background: var(--card-color); padding: 20px; border-radius: 8px;
+            text-align: center; border: 2px solid var(--accent-color); 
+            width: 80%; max-width: 300px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .modal-title { font-weight: bold; margin-bottom: 15px; font-size: 1.2rem; color: var(--text-color);}
+        .btn-roll {
+            display: block; width: 100%; margin-bottom: 10px; padding: 10px;
+            background: var(--bg-color); border: 1px solid var(--border-color);
+            border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 1rem;
+        }
+        .btn-roll:hover { background: var(--accent-color); color: white; border-color: var(--accent-color);}
+        .btn-close-modal { background: #666; color: white; margin-top: 10px; border: none;}
+        .btn-close-modal:hover { background: #444; }
+
+        /* --- ESTILOS DO LOG DE ROLAGENS --- */
+        .log-container {
+            border: 1px solid var(--border-color);
+            background-color: var(--card-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .log-box {
+            max-height: 250px;
+            overflow-y: auto;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .log-entry {
+            background: var(--card-color);
+            border-left: 4px solid var(--accent-color);
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 0 4px 4px 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .log-details {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .log-result {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+        .log-empty { text-align: center; color: #888; font-size: 0.9rem; padding: 20px 0; font-style: italic;}
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Estilo para o campo de vida temporária */
+        .hp-temp-input { 
+            font-size: 1.8rem; 
+            font-weight: bold; 
+            color: #2196f3; /* Azul */
+            text-align: center; 
+            border: 1px solid var(--border-color); 
+            border-radius: 4px; 
+            width: 60px;
+        }
+
+        /* Container para alinhar vida atual e temporária */
+        .hp-display-container { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 20px; 
+            padding: 10px 0; 
+        }
+
+        /* Estilo base da bolinha de proficiência */
+        .prof-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1px solid var(--text-color);
+            display: inline-block;
+            cursor: pointer;
+            vertical-align: middle;
+            margin-right: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        /* Estado 0: Nenhuma (Vazia) */
+        .prof-dot[data-prof="0"] { 
+            background-color: transparent; 
+        }
+        
+        /* Estado 1: Normal (Preenchida) */
+        .prof-dot[data-prof="1"] { 
+            background-color: var(--text-color); 
+        }
+        
+        /* Estado 2: Expert (Preenchida com borda dupla) */
+        .prof-dot[data-prof="2"] { 
+            background-color: var(--text-color); 
+            box-shadow: 0 0 0 2px var(--bg-color), 0 0 0 3px var(--text-color); 
+        }
+        
+        /* Estado 3: Meio Proficiente (Metade preenchida) */
+        .prof-dot[data-prof="3"] { 
+            background: linear-gradient(90deg, var(--text-color) 50%, transparent 50%); 
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <a href="index.html" style="text-decoration: none;">
+            <button type="button" class="btn-back">❮ Voltar</button>
+        </a>
+        <button class="btn-delete" onclick="window.excluirFicha()">🗑️ Excluir Ficha</button>
+        
+        <span id="save-status" style="float: right; margin-top: 8px; margin-right: 8px; font-size: 0.85rem; font-weight: bold; color: #888; font-style: italic;">  </span>
+    </div>
+
+    <div class="header-dnd">
+        <div class="char-header-top">
+            <div class="char-name-box">
+                <input type="text" id="char-name" placeholder="Nome do Personagem" class="char-name-input">
+                <div class="info-label">NOME DO PERSONAGEM</div>
+            </div>
+        </div>
+        
+        <div class="char-info-grid">
+            <div class="info-group"><input type="text" id="char-class"><div class="info-label">CLASSE & NÍVEL</div></div>
+            <div class="info-group"><input type="text" id="char-alignment"><div class="info-label">TENDÊNCIA</div></div>
+            <div class="info-group"><input type="text" id="char-race"><div class="info-label">RAÇA</div></div>
+            <div class="info-group"><input type="number" id="char-xp"><div class="info-label">PONTOS DE EXPERIÊNCIA</div></div>
+            <div class="info-group"><input type="text" id="char-background"><div class="info-label">Antecedente</div></div>
+        </div>
+    </div>
+    
+    <div class="combat-stats-row">
+        <div class="prof-bonus-box">
+            <input type="text" id="prof-bonus" value="+2" onchange="window.atualizarPericias()" style="width: 35px; font-weight: bold; font-size: 1.2rem; border: none; text-align: center;">
+            <span class="info-label">BÔNUS DE PROFICIÊNCIA</span>
+        </div>
+        
+        <div class="combat-sub-grid">
+            <div class="dnd-box"><span class="dnd-box-label">CLASSE DE ARM.</span><input type="number" id="char-ac" class="dnd-box-value" value="0"></div>
+             <div class="dnd-box">
+                <span class="dnd-box-label clickable" onclick="window.abrirModalRolagem('Iniciativa', 'iniciativa-val')">INICIATIVA</span>
+                <input type="text" class="dnd-box-value" id="iniciativa-val" value="+0" readonly>
+            </div>
+            <div class="dnd-box">
+                <span class="dnd-box-label">BÔNUS INIC.</span>
+                <input type="number" class="dnd-box-value" id="iniciativa-bonus" value="0" oninput="window.atualizarPericias()">
+            </div>
+        </div>
+    </div>
+
+    <div class="combat-sub-grid" style="margin-bottom: 20px;">
+        <div class="dnd-box"><span class="dnd-box-label">DESLOCAMENTO</span><input type="text" id="char-speed" class="dnd-box-value" value="0m"></div>
+        <div class="dnd-box"><span class="dnd-box-label">VOO</span><input type="text" id="char-speed-fly" class="dnd-box-value" value="0m"></div>
+        <div class="dnd-box"><span class="dnd-box-label">ESCALADA</span><input type="text" id="char-speed-climb" class="dnd-box-value" value="0m"></div>
+    </div>
+
+    <div style="margin: 10px 0;">
+        <button class="btn-back" id="btn-ir-magias" style="width: 100%; background: #5e35b1; color: white; border: none; font-weight: bold; padding: 10px;">Lista de Magias</button>
+    </div>
+
+    <div class="hp-section">
+        <div class="hp-header">
+            <span class="u-uppercase" style="color: var(--accent-color)">Vida Atual / Temporária</span>
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span class="info-label">Máximo</span><input type="number" id="hp-max" class="hp-max-input" value="0">
+            </div>
+        </div>
+        <div class="hp-display-container">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <input type="number" id="hp-current" class="hp-current-input" value="0">
+                <span class="info-label">Atual</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <input type="number" id="hp-temp" class="hp-temp-input" value="0">
+                <span class="info-label" style="color: #2196f3;">Temporário</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="attributes-container" id="attributes-container"></div>
+
+    <div class="list-container">
+        <h3 class="list-title">Testes de Resistência</h3>
+        <div id="saves-container"></div>
+    </div>
+
+    <div class="list-container">
+        <h3 class="list-title">Perícias</h3>
+        <div id="skills-container"></div>
+    </div>
+
+    <div style="margin-bottom: 30px;"></div>
+
+    <script type="module">
+        // 1. Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+        import { 
+            getFirestore, doc, setDoc, getDoc, deleteDoc, 
+            collection, addDoc, query, where, orderBy, limit, onSnapshot, getDocs, writeBatch 
+        } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+        // 2. A sua Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCNnl95-aJGntyBdGP8g4jqIue_tYbLcek",
+            authDomain: "dedvtt-77.firebaseapp.com",
+            projectId: "dedvtt-77",
+            storageBucket: "dedvtt-77.firebasestorage.app",
+            messagingSenderId: "372808860116",
+            appId: "1:372808860116:web:ff19b425c957084c0a1641"
+        };
+
+        // 3. Inicializar Firebase e Firestore
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Pega o ID da URL (ex: index.html?id=Gimli -> id será "Gimli")
+        const urlParams = new URLSearchParams(window.location.search);
+        const FICHA_ID = urlParams.get('id') || "Ficha-Padrao";
+        
+        document.getElementById('btn-ir-magias').onclick = () => {
+            window.location.href = `magias.html?id=${FICHA_ID}`;
+        };
+
+        // Atualiza o título da página para o nome do personagem
+        if(urlParams.get('id')) document.title = "Ficha - " + FICHA_ID;
+
+        // 4. DADOS DA FICHA (Tornamos globais usando window. para o HTML conseguir ler)
+        window.atributos = [
+            { nome: 'FORÇA', valor: 10 }, { nome: 'DESTREZA', valor: 10 },
+            { nome: 'CONSTITUIÇÃO', valor: 10 }, { nome: 'INTELIGÊNCIA', valor: 10 },
+            { nome: 'SABEDORIA', valor: 10 }, { nome: 'CARISMA', valor: 10 }
+        ];
+
+        const saves = [
+            { nome: 'Força', attr: 'FORÇA' }, { nome: 'Destreza', attr: 'DESTREZA' }, 
+            { nome: 'Constituição', attr: 'CONSTITUIÇÃO' }, { nome: 'Inteligência', attr: 'INTELIGÊNCIA' }, 
+            { nome: 'Sabedoria', attr: 'SABEDORIA' }, { nome: 'Carisma', attr: 'CARISMA' }
+        ];
+
+        const pericias = [
+            { nome: 'Acrobacia', attr: 'Des' }, { nome: 'Arcanismo', attr: 'Int' },
+            { nome: 'Atletismo', attr: 'For' }, { nome: 'Atuação', attr: 'Car' },
+            { nome: 'Enganação', attr: 'Car' }, { nome: 'Furtividade', attr: 'Des' },
+            { nome: 'História', attr: 'Int' }, { nome: 'Intimidação', attr: 'Car' },
+            { nome: 'Intuição', attr: 'Sab' }, { nome: 'Investigação', attr: 'Int' },
+            { nome: 'Lidar com Animais', attr: 'Sab' }, { nome: 'Medicina', attr: 'Sab' },
+            { nome: 'Natureza', attr: 'Int' }, { nome: 'Percepção', attr: 'Sab' },
+            { nome: 'Persuasão', attr: 'Car' }, { nome: 'Prestidigitação', attr: 'Des' },
+            { nome: 'Religião', attr: 'Int' }, { nome: 'Sobrevivência', attr: 'Sab' }
+        ];
+
+        // 5. FUNÇÕES DE RENDERIZAÇÃO
+        window.calcularModificador = function(valor) {
+            const mod = Math.floor((valor - 10) / 2);
+            return mod >= 0 ? `+${mod}` : mod;
+        };
+
+        window.formatarModificador = function(valor) {
+            return valor >= 0 ? `+${valor}` : valor;
+        };
+
+        function renderizarInterface() {
+            // Renderiza Atributos
+            const attrContainer = document.getElementById('attributes-container');
+            attrContainer.innerHTML = '';
+            window.atributos.forEach(attr => {
+                const mod = window.calcularModificador(attr.valor);
+                const html = `
+                    <div class="attr-card">
+                        <div class="attr-label clickable" onclick="window.abrirModalRolagem('${attr.nome}', 'mod-box-${attr.nome}')">${attr.nome}</div>
+                        <div class="attr-mod-box" id="mod-box-${attr.nome}">${mod}</div>
+                        <div class="attr-score-box">
+                            <input type="number" class="attr-score-input" id="attr-input-${attr.nome}" value="${attr.valor}" onchange="window.atualizarMod(this, '${attr.nome}')">
+                        </div>
+                    </div>
+                `;
+                attrContainer.innerHTML += html;
+            });
+
+            // Renderiza Salvaguardas
+            const savesContainer = document.getElementById('saves-container');
+            savesContainer.innerHTML = '';
+            saves.forEach((save, index) => {
+                const html = `
+                    <div class="list-item">
+                        <input type="checkbox" class="prof-dot" id="save-prof-${index}" onchange="window.atualizarPericias()">
+                        <input type="text" class="list-mod" id="save-val-${index}" value="+0" readonly>
+                        <span class="list-name clickable" onclick="window.abrirModalRolagem('Teste de ${save.nome}', 'save-val-${index}')">${save.nome}</span>
+                    </div>
+                `;
+                savesContainer.innerHTML += html;
+            });
+
+            // Renderiza Perícias
+            const skillsContainer = document.getElementById('skills-container');
+            skillsContainer.innerHTML = '';
+            pericias.forEach((pericia, index) => {
+                const html = `
+                    <div class="list-item">
+                        <div class="prof-dot" id="skill-prof-${index}" data-prof="0" onclick="window.alternarProficiencia(this)"></div>
+                        <input type="text" class="list-mod" id="skill-val-${index}" value="+0" readonly>
+                        <span class="list-name clickable" onclick="window.abrirModalRolagem('Perícia: ${pericia.nome}', 'skill-val-${index}')">${pericia.nome} <span class="attr-hint">(${pericia.attr})</span></span>
+                    </div>
+                `;
+                skillsContainer.innerHTML += html;
+            });
+        }
+
+        // 6. LÓGICA DE ATUALIZAÇÃO
+        window.atualizarMod = function(input, nomeAtributo) {
+            const novoValor = parseInt(input.value);
+            if (!isNaN(novoValor)) {
+                // Atualiza o array global
+                const attrIndex = window.atributos.findIndex(a => a.nome === nomeAtributo);
+                if(attrIndex !== -1) window.atributos[attrIndex].valor = novoValor;
+                
+                // Atualiza a caixinha do modificador grande na tela
+                document.getElementById(`mod-box-${nomeAtributo}`).textContent = window.calcularModificador(novoValor);
+                
+                window.atualizarPericias();
+            }
+        };
+
+        window.alternarProficiencia = function(elemento) {
+            // Lê o valor atual (se não tiver, é 0)
+            let atual = parseInt(elemento.getAttribute('data-prof')) || 0;
+            
+            // Soma 1. O operador % 4 garante que depois do 3, volta pro 0.
+            let proximo = (atual + 1) % 4; 
+            
+            // Atualiza a bolinha na tela
+            elemento.setAttribute('data-prof', proximo);
+            
+            // Dispara o cálculo e o Auto-Save
+            if (window.atualizarPericias) window.atualizarPericias();
+            if (window.dispararAutoSave) window.dispararAutoSave();
+        };
+
+        window.atualizarPericias = function() {
+            const profBonusInput = document.getElementById('prof-bonus').value;
+            let profBonus = parseInt(profBonusInput.replace('+', '')); 
+            if (isNaN(profBonus)) profBonus = 0;
+
+            const atributoDestreza = window.atributos.find(a => a.nome === 'DESTREZA');
+            const modDestreza = Math.floor((atributoDestreza.valor - 10) / 2);
+            const bonusIniciativa = parseInt(document.getElementById('iniciativa-bonus').value) || 0;
+            document.getElementById('iniciativa-val').value = window.formatarModificador(modDestreza + bonusIniciativa);
+
+            // Calcula Salvaguardas
+            saves.forEach((save, index) => {
+                const atributoDado = window.atributos.find(a => a.nome === save.attr);
+                const modAtributo = Math.floor((atributoDado.valor - 10) / 2);
+                const isProficiente = document.getElementById(`save-prof-${index}`).checked;
+                const total = isProficiente ? modAtributo + profBonus : modAtributo;
+                document.getElementById(`save-val-${index}`).value = window.formatarModificador(total);
+            });
+
+            // Calcula Perícias
+            const mapaAtributos = {
+                'For': 'FORÇA', 'Des': 'DESTREZA', 'Con': 'CONSTITUIÇÃO',
+                'Int': 'INTELIGÊNCIA', 'Sab': 'SABEDORIA', 'Car': 'CARISMA'
+            };
+
+            pericias.forEach((pericia, index) => {
+                const nomeAtributo = mapaAtributos[pericia.attr];
+                const atributoDado = window.atributos.find(a => a.nome === nomeAtributo);
+                const modAtributo = Math.floor((atributoDado.valor - 10) / 2);
+                
+                // CORREÇÃO: Puxa o nível da bolinha (0, 1, 2 ou 3)
+                const profElement = document.getElementById(`skill-prof-${index}`);
+                const profLevel = profElement ? parseInt(profElement.getAttribute('data-prof')) || 0 : 0;
+
+                let multiplicador = 0;
+                if (profLevel === 1) multiplicador = 1;      // Normal (100%)
+                else if (profLevel === 2) multiplicador = 2; // Expert (200%)
+                else if (profLevel === 3) multiplicador = 0.5; // Meio Proficiente (50%)
+
+                // Aplica a matemática: Modificador do Atributo + (Bônus arredondado para baixo)
+                const total = modAtributo + Math.floor(profBonus * multiplicador);
+                
+                document.getElementById(`skill-val-${index}`).value = window.formatarModificador(total);
+            });
+        };
+
+        // 7. INTEGRAÇÃO FIREBASE: GUARDAR FICHA
+        window.salvarFicha = async function() {
+            const nomeFicha = FICHA_ID;
+            const statusLabel = document.getElementById('save-status');
+            
+            if (statusLabel) {
+                statusLabel.textContent = "Salvando no Firebase...";
+                statusLabel.style.color = "var(--accent-color)"; // Fica vermelho D&D enquanto salva
+            }
+            
+            const savesProfArray = [];
+            for(let i = 0; i < saves.length; i++) {
+                const check = document.getElementById(`save-prof-${i}`);
+                savesProfArray.push(check ? check.checked : false);
+            }
+
+            const skillsProfArray = [];
+            for(let i = 0; i < pericias.length; i++) {
+                const check = document.getElementById(`skill-prof-${i}`);
+                skillsProfArray.push(check ? parseInt(check.getAttribute('data-prof') || 0) : 0);
+            }
+
+            const dadosDaFicha = {
+                nome: document.getElementById('char-name').value,
+                raca: document.getElementById('char-race').value,
+                classe: document.getElementById('char-class').value,
+                alinhamento: document.getElementById('char-alignment').value,
+                xp: document.getElementById('char-xp').value,
+                profBonus: document.getElementById('prof-bonus').value,
+                hpMax: document.getElementById('hp-max').value,
+                hpAtual: document.getElementById('hp-current').value,
+                hpTemp: document.getElementById('hp-temp') ? document.getElementById('hp-temp').value : "0",
+                ca: document.getElementById('char-ac').value, 
+                iniciativa: document.getElementById('iniciativa-val').value,
+                iniciativaBonus: document.getElementById('iniciativa-bonus').value,
+                deslocamento: document.getElementById('char-speed').value,
+                deslocamentoVoo: document.getElementById('char-speed-fly').value,
+                deslocamentoEscalada: document.getElementById('char-speed-climb').value,
+                antecedente: document.getElementById('char-background').value,
+                equipamentos: document.getElementById('equip-list') ? document.getElementById('equip-list').value : "",
+                notas: document.getElementById('notes-area') ? document.getElementById('notes-area').value : "",
+                atributos: window.atributos,
+                pericias: pericias,
+                savesProf: savesProfArray,
+                skillsProf: skillsProfArray
+            };
+
+            try {
+                await setDoc(doc(db, "fichas", nomeFicha), dadosDaFicha, {merge: true});
+                
+                // Feedback visual de Sucesso
+                if (statusLabel) {
+                    statusLabel.textContent = "✓ Ficha salva!";
+                    statusLabel.style.color = "#2e7d32"; // Verde
+                    
+                    // Limpa a mensagem após 3 segundos para não poluir a tela
+                    setTimeout(() => {
+                        if (statusLabel.textContent === "✓ Ficha salva!") {
+                            statusLabel.textContent = "";
+                        }
+                    }, 3000);
+                }
+            } catch (e) {
+                console.error("Erro ao guardar automaticamente: ", e);
+                if (statusLabel) {
+                    statusLabel.textContent = "⚠️ Erro ao salvar!";
+                    statusLabel.style.color = "red";
+                }
+            }
+        };
+
+        // --- LÓGICA DE AUTO-SAVE ---
+        let timeoutSalvar;
+
+        window.dispararAutoSave = function() {
+            const statusLabel = document.getElementById('save-status');
+            if (statusLabel) {
+                statusLabel.textContent = "Aguardando para salvar...";
+                statusLabel.style.color = "#888"; // Cinza enquanto você ainda está digitando
+            }
+
+            clearTimeout(timeoutSalvar);
+            timeoutSalvar = setTimeout(() => {
+                window.salvarFicha();
+            }, 1500); // Executa o salvamento 1.5s após você parar de digitar/clicar
+        };
+
+        // Escuta alterações em qualquer campo da tela para acionar o auto-save
+        document.addEventListener('input', window.dispararAutoSave);
+        document.addEventListener('change', window.dispararAutoSave);
+
+        window.excluirFicha = async function() {
+            // 1. Pedir confirmação para evitar cliques acidentais
+            const confirmar = confirm(`Tem certeza que deseja excluir permanentemente a ficha de "${FICHA_ID}"?`);
+            
+            if (confirmar) {
+                try {
+                    const btn = document.querySelector('.btn-delete');
+                    btn.textContent = "A excluir...";
+                    
+                    // 2. Comando para deletar o documento no Firebase
+                    await deleteDoc(doc(db, "fichas", FICHA_ID));
+                    
+                    alert("Ficha excluída com sucesso!");
+                    
+                    // 3. Redirecionar o usuário de volta para a listagem
+                    window.location.href = 'index.html';
+                    
+                } catch (error) {
+                    console.error("Erro ao excluir: ", error);
+                    alert("Não foi possível excluir a ficha. Tente novamente.");
+                    document.querySelector('.btn-delete').textContent = "🗑️ Excluir Ficha";
+                }
+            }
+        };
+
+        // 8. INTEGRAÇÃO FIREBASE: CARREGAR FICHA
+        window.carregarFicha = async function() {
+            try {
+                // Vai buscar os dados ao Firestore
+                const docSnap = await getDoc(doc(db, "fichas", FICHA_ID));
+                
+                if (docSnap.exists()) {
+                    const dados = docSnap.data();
+                    
+                    // Preenche os campos de texto e números
+                    document.getElementById('char-name').value = dados.nome || "";
+                    document.getElementById('char-class').value = dados.classe || "";
+                    document.getElementById('char-alignment').value = dados.alinhamento || "";
+                    document.getElementById('char-background').value = dados.antecedente || "";
+                    document.getElementById('char-race').value = dados.raca || "";
+                    document.getElementById('char-xp').value = dados.xp || "";
+                    document.getElementById('prof-bonus').value = dados.profBonus || "+2";
+                    document.getElementById('char-ac').value = dados.ca || "0";
+                    document.getElementById('char-speed').value = dados.deslocamento || "0m";
+                    document.getElementById('iniciativa-bonus').value = dados.iniciativaBonus || "0";
+                    document.getElementById('char-speed-fly').value = dados.deslocamentoVoo || "0m";
+                    document.getElementById('char-speed-climb').value = dados.deslocamentoEscalada || "0m";
+                    document.getElementById('hp-max').value = dados.hpMax || "0";
+                    document.getElementById('hp-current').value = dados.hpAtual || "0";
+                    document.getElementById('hp-temp').value = dados.hpTemp || "0";
+
+                    // Atualiza os atributos
+                    if (dados.atributos) {
+                        window.atributos = dados.atributos;
+                        // Atualiza as caixinhas HTML dos atributos
+                        window.atributos.forEach(attr => {
+                            const input = document.getElementById(`attr-input-${attr.nome}`);
+                            if(input) {
+                                input.value = attr.valor;
+                                document.getElementById(`mod-box-${attr.nome}`).textContent = window.calcularModificador(attr.valor);
+                            }
+                        });
+                    }
+
+                    // Preenche as bolinhas das salvaguardas
+                    if (dados.savesProf) {
+                        dados.savesProf.forEach((marcado, i) => {
+                            const checkbox = document.getElementById(`save-prof-${i}`);
+                            if(checkbox) checkbox.checked = marcado;
+                        });
+                    }
+
+                    // Preenche as bolinhas das perícias
+                    if (dados.skillsProf) {
+                        for(let i = 0; i < dados.skillsProf.length; i++) {
+                            let valor = dados.skillsProf[i];
+                            if (valor === true) valor = 1; // Ficha antiga marcada
+                            if (valor === false) valor = 0; // Ficha antiga desmarcada
+                            
+                            const el = document.getElementById(`skill-prof-${i}`);
+                            if (el) el.setAttribute('data-prof', valor);
+                        }
+                    }
+                    
+                    console.log("Ficha carregada da base de dados!");
+                } else {
+                    console.log("Nenhuma ficha guardada ainda. A usar a ficha limpa.");
+                }
+
+                // Recalcula todos os bónus de acordo com os dados carregados
+                window.atualizarPericias();
+
+            } catch (error) {
+                console.error("Erro ao carregar a ficha: ", error);
+            }
+        };
+
+        // 9. INICIALIZAÇÃO DA PÁGINA
+        // Quando a página abre: Renderiza as caixas limpas, depois tenta carregar do Firebase
+        renderizarInterface();
+        window.carregarFicha();
+
+        // --- SISTEMA DE ROLAGEM DE DADOS ---
+        window.rolagemAtual = { nome: '', modificador: 0 };
+
+        window.abrirModalRolagem = function(nome, idElementoModificador) {
+            // Vai buscar o modificador diretamente da tela (seja input ou div)
+            const elemento = document.getElementById(idElementoModificador);
+            let modTexto = elemento.value || elemento.textContent;
+            let modificador = parseInt(modTexto.replace('+', '')) || 0;
+            
+            // Guarda as informações e abre a janela
+            window.rolagemAtual = { nome: nome, modificador: modificador };
+            document.getElementById('modal-nome-rolagem').textContent = `Rolar ${nome}`;
+            document.getElementById('modal-rolagem').style.display = 'flex';
+        };
+
+        window.fecharModal = function() {
+            document.getElementById('modal-rolagem').style.display = 'none';
+        };
+
+        window.executarRolagem = async function(tipo) {
+            window.fecharModal();
+            
+            const mod = window.rolagemAtual.modificador;
+            const nome = window.rolagemAtual.nome;
+            const nomePersonagem = document.getElementById('char-name').value || "Desconhecido";
+            
+            const d1 = Math.floor(Math.random() * 20) + 1;
+            const d2 = Math.floor(Math.random() * 20) + 1;
+            
+            let resultadoFinal = 0;
+            let detalhes = "";
+            let tipoLabel = "";
+
+            if (tipo === 'normal') {
+                resultadoFinal = d1 + mod;
+                tipoLabel = "Normal";
+                detalhes = `Dado: [ ${d1} ] | Mod: ${mod >= 0 ? '+'+mod : mod}`;
+            } else if (tipo === 'vantagem') {
+                const melhor = Math.max(d1, d2);
+                resultadoFinal = melhor + mod;
+                tipoLabel = "Vantagem";
+                detalhes = `Dados: [ ${d1}, ${d2} ] | Melhor: [ ${melhor} ] | Mod: ${mod >= 0 ? '+'+mod : mod}`;
+            } else if (tipo === 'desvantagem') {
+                const pior = Math.min(d1, d2);
+                resultadoFinal = pior + mod;
+                tipoLabel = "Desvantagem";
+                detalhes = `Dados: [ ${d1}, ${d2} ] | Pior: [ ${pior} ] | Mod: ${mod >= 0 ? '+'+mod : mod}`;
+            }
+
+            try {
+                // Envia a rolagem para a coleção separada no Firebase
+                await addDoc(collection(db, "rolagens"), {
+                    fichaId: FICHA_ID,
+                    personagem: nomePersonagem,
+                    nome: nome,
+                    tipo: tipoLabel,
+                    detalhes: detalhes,
+                    resultado: resultadoFinal,
+                    timestamp: Date.now()
+                });
+                
+                // Desliza a tela até o log
+                document.querySelector('.log-container').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } catch (e) {
+                console.error("Erro ao salvar rolagem:", e);
+            }
+        };
+
+        window.ouvirRolagens = function() {
+            const q = query(
+                collection(db, "rolagens"),
+                //where("fichaId", "==", FICHA_ID),
+                orderBy("timestamp", "desc")
+            );
+
+            onSnapshot(q, (snapshot) => {
+                const logBox = document.getElementById('dice-log');
+                
+                if (snapshot.empty) {
+                    logBox.innerHTML = '<div class="log-empty">Nenhuma rolagem feita ainda.</div>';
+                    return;
+                }
+
+                logBox.innerHTML = ''; // Limpa para desenhar as novas rolagens do Firebase
+                snapshot.forEach((doc) => {
+                    const roll = doc.data();
+                    const entry = document.createElement('div');
+                    entry.className = 'log-entry';
+                    entry.innerHTML = `
+                        <div class="log-header">
+                            <span>${roll.personagem}</span>
+                            <span>${roll.nome} (${roll.tipo})</span>
+                        </div>
+                        <div class="log-details">${roll.detalhes}</div>
+                        <div class="log-result">Total: ${roll.resultado}</div>
+                    `;
+                    logBox.appendChild(entry);
+                });
+            });
+        };
+
+        window.limparLog = async function() {
+            if(!confirm("Deseja apagar permanentemente o histórico de rolagens desta ficha?")) return;
+            try {
+                const q = query(collection(db, "rolagens"), where("fichaId", "==", FICHA_ID));
+                const snapshot = await getDocs(q);
+                const batch = writeBatch(db);
+                snapshot.forEach((doc) => batch.delete(doc.ref));
+                await batch.commit();
+            } catch (e) {
+                console.error("Erro ao limpar log:", e);
+            }
+        };
+        window.ouvirRolagens();
+    </script>
+
+    <div class="modal-overlay" id="modal-rolagem">
+        <div class="modal-content">
+            <div class="modal-title" id="modal-nome-rolagem">Rolar Dado</div>
+            <button class="btn-roll" onclick="window.executarRolagem('normal')">🎲 Normal</button>
+            <button class="btn-roll" onclick="window.executarRolagem('vantagem')">📈 Com Vantagem</button>
+            <button class="btn-roll" onclick="window.executarRolagem('desvantagem')">📉 Com Desvantagem</button>
+            <button class="btn-roll btn-close-modal" onclick="window.fecharModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <div class="log-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 class="list-title" style="margin: 0;">📜 Registro de Rolagens</h3>
+            <button onclick="window.limparLog()" style="background: none; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 0.7rem; padding: 2px 8px;">Limpar Log</button>
+        </div>
+        <div class="log-box" id="dice-log">
+            <div class="log-empty" id="log-empty-msg">Nenhuma rolagem feita ainda.</div>
+        </div>
+    </div>
+</body>
+</html>

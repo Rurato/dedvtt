@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Fichas - D&D</title>
+    <style>
+        :root {
+            --bg-color: #fdfaf3;
+            --card-color: #ffffff;
+            --text-color: #1a1a1a;
+            --accent-color: #b11f2d;
+            --border-color: #d1d1d1;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            max-width: 600px;
+            margin: auto;
+        }
+        .header { text-align: center; margin-bottom: 30px; }
+        .btn-new {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1.1rem;
+        }
+        .fichas-lista { margin-top: 20px; display: grid; gap: 15px; }
+        .ficha-card {
+            background: var(--card-color);
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .ficha-info h3 { margin: 0; color: var(--accent-color); }
+        .ficha-info p { margin: 5px 0 0; font-size: 0.9rem; color: #666; }
+        .btn-open {
+            background: none;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>📜 Minhas Fichas</h1>
+        <button class="btn-new" onclick="novaFicha()">+ Criar Nova Ficha</button>
+    </div>
+
+    <div class="fichas-lista" id="lista-fichas">
+        <p style="text-align: center;">A carregar fichas...</p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCNnl95-aJGntyBdGP8g4jqIue_tYbLcek",
+            authDomain: "dedvtt-77.firebaseapp.com",
+            projectId: "dedvtt-77",
+            storageBucket: "dedvtt-77.firebasestorage.app",
+            messagingSenderId: "372808860116",
+            appId: "1:372808860116:web:ff19b425c957084c0a1641"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function carregarLista() {
+            const container = document.getElementById('lista-fichas');
+            try {
+                const querySnapshot = await getDocs(collection(db, "fichas"));
+                container.innerHTML = '';
+
+                if (querySnapshot.empty) {
+                    container.innerHTML = '<p style="text-align: center;">Nenhuma ficha encontrada.</p>';
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const card = document.createElement('div');
+                    card.className = 'ficha-card';
+                    card.innerHTML = `
+                        <div class="ficha-info">
+                            <h3>${data.nome || 'Sem Nome'}</h3>
+                            <p>${data.raca || 'Raça'} - ${data.classe || 'Classe'}</p>
+                        </div>
+                        <button class="btn-open" onclick="window.location.href='ficha.html?id=${doc.id}'">Abrir</button>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<p>Erro ao carregar fichas.</p>';
+            }
+        }
+
+        window.novaFicha = () => {
+            const nome = prompt("Qual o nome do novo personagem?");
+            if (nome) window.location.href = `ficha.html?id=${encodeURIComponent(nome)}`;
+        };
+
+        carregarLista();
+    </script>
+</body>
+</html>

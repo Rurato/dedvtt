@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criação - Antecedente</title>
+    <style>
+        :root { --bg-color: #121212; --card-bg: #1e1e1e; --accent: #e63946; --text-main: #e0e0e0; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-color); color: var(--text-main); padding: 20px; padding-bottom: 80px; }
+        
+        h2 { border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
+
+        .bg-list { display: flex; flex-direction: column; gap: 15px; }
+        
+        .bg-card {
+            background: var(--card-bg);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .bg-card.selected {
+            border-color: var(--accent);
+            background-color: #252525;
+            box-shadow: 0 0 10px rgba(230, 57, 70, 0.2);
+        }
+
+        .bg-name { font-size: 1.2rem; font-weight: bold; color: var(--accent); margin-bottom: 5px; }
+        .bg-label { font-size: 0.8rem; color: #888; font-weight: bold; margin-top: 8px; display: block; }
+        .bg-text { font-size: 0.9rem; color: #ddd; margin-bottom: 5px; }
+        
+        /* Tags de Perícias */
+        .skill-tag {
+            display: inline-block;
+            background: #333;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-right: 5px;
+            border: 1px solid #444;
+        }
+
+        /* Rodapé Fixo */
+        .footer-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: #1a1a1a; padding: 20px;
+            border-top: 1px solid #333;
+            display: flex; justify-content: space-between; z-index: 100;
+        }
+        .btn-back { background: transparent; border: 1px solid #555; color: #aaa; padding: 12px 25px; border-radius: 4px; cursor: pointer; }
+        .btn-next { background: var(--accent); color: white; border: none; padding: 12px 25px; border-radius: 4px; font-weight: bold; opacity: 0.5; pointer-events: none; }
+        .btn-next.active { opacity: 1; pointer-events: all; }
+    </style>
+</head>
+<body>
+
+    <h2>4. Escolha o Antecedente</h2>
+    <p style="font-size: 0.9rem; color: #888;">Define sua origem, perícias extras e itens iniciais.</p>
+
+    <div id="bg-container" class="bg-list"></div>
+
+    <div class="footer-nav">
+        <button class="btn-back" onclick="window.location.href='classe.html'">❮ Voltar</button>
+        <button id="btn-next" class="btn-next" onclick="irParaEquipamento()">Próximo: Equipamento ❯</button>
+    </div>
+
+    <script>
+        // --- BANCO DE DADOS DE ANTECEDENTES ---
+        const antecedentesDB = [
+            {
+                id: 'acolito',
+                nome: 'Acólito',
+                descricao: 'Você passou sua vida a serviço de um templo.',
+                pericias: ['Intuição', 'Religião'],
+                idiomas: 2, // Quantidade de idiomas extras
+                equipamento: ['Símbolo sagrado', 'Livro de preces', '5 varetas de incenso', 'Vestes', 'Algibeira com 15 PO'],
+                recurso: 'Abrigo dos Fiéis'
+            },
+            {
+                id: 'criminoso',
+                nome: 'Criminoso',
+                descricao: 'Você é um criminoso experiente com histórico de infrações.',
+                pericias: ['Enganação', 'Furtividade'],
+                ferramentas: ['Kit de Jogos', 'Ferramentas de Ladrão'],
+                equipamento: ['Pé de cabra', 'Roupas escuras com capuz', 'Algibeira com 15 PO'],
+                recurso: 'Contato Criminal'
+            },
+            {
+                id: 'heroi_povo',
+                nome: 'Herói do Povo',
+                descricao: 'Você vem de uma classe humilde, mas está destinado a grandeza.',
+                pericias: ['Adestrar Animais', 'Sobrevivência'],
+                ferramentas: ['Um tipo de ferramenta de artesão', 'Veículos terrestres'],
+                equipamento: ['Ferramentas de artesão', 'Pá', 'Pote de ferro', 'Roupas comuns', 'Algibeira com 10 PO'],
+                recurso: 'Hospitalidade Rústica'
+            },
+            {
+                id: 'soldado',
+                nome: 'Soldado',
+                descricao: 'A guerra faz parte da sua vida desde que se lembra.',
+                pericias: ['Atletismo', 'Intimidação'],
+                ferramentas: ['Kit de Jogos', 'Veículos terrestres'],
+                equipamento: ['Insígnia de posto', 'Troféu de inimigo', 'Um jogo de dados ou cartas', 'Roupas comuns', 'Algibeira com 10 PO'],
+                recurso: 'Patente Militar'
+            }
+        ];
+
+        let antecedenteSelecionado = null;
+        const container = document.getElementById('bg-container');
+        const btnNext = document.getElementById('btn-next');
+
+        function renderizar() {
+            antecedentesDB.forEach(bg => {
+                // Cria as tags de perícias bonitinhas
+                const skillsTags = bg.pericias.map(s => `<span class="skill-tag">${s}</span>`).join('');
+                
+                // Texto de ferramentas/idiomas
+                let extras = [];
+                if(bg.ferramentas) extras.push(bg.ferramentas.join(', '));
+                if(bg.idiomas) extras.push(`+${bg.idiomas} Idiomas`);
+                const extrasTexto = extras.length > 0 ? extras.join(' • ') : 'Nenhum';
+
+                const card = document.createElement('div');
+                card.className = 'bg-card';
+                card.id = `card-${bg.id}`;
+                card.onclick = () => selecionar(bg.id);
+                
+                card.innerHTML = `
+                    <div class="bg-name">${bg.nome}</div>
+                    <div class="bg-text">${bg.descricao}</div>
+                    
+                    <span class="bg-label">PERÍCIAS:</span>
+                    <div style="margin-bottom:8px">${skillsTags}</div>
+                    
+                    <span class="bg-label">PROFICIÊNCIAS / IDIOMAS:</span>
+                    <div class="bg-text" style="font-size:0.85rem">${extrasTexto}</div>
+
+                    <span class="bg-label">EQUIPAMENTO:</span>
+                    <div class="bg-text" style="font-size:0.8rem; color:#888;">${bg.equipamento.join(', ')}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function selecionar(id) {
+            // Limpa seleções visuais
+            document.querySelectorAll('.bg-card').forEach(c => c.classList.remove('selected'));
+            
+            // Seleciona o atual
+            const card = document.getElementById(`card-${id}`);
+            card.classList.add('selected');
+            
+            // Salva na variável
+            antecedenteSelecionado = antecedentesDB.find(b => b.id === id);
+            
+            // Ativa botão
+            btnNext.classList.add('active');
+        }
+
+        function irParaEquipamento() {
+            if(!antecedenteSelecionado) return;
+
+            // Salva no LocalStorage
+            localStorage.setItem('novoPersonagem_antecedente', JSON.stringify(antecedenteSelecionado));
+            
+            // Redireciona
+            // AINDA VAMOS CRIAR O ARQUIVO equipamento.html
+            window.location.href = 'equipamento.html';
+        }
+
+        renderizar();
+    </script>
+</body>
+</html>

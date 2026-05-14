@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livro de Magias</title>
+    <style>
+        :root {
+            --bg-color: #fdfaf3;
+            --card-color: #ffffff;
+            --text-color: #1a1a1a;
+            --accent-color: #b11f2d;
+            --border-color: #d1d1d1;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 10px;
+            margin: 0;
+            max-width: 600px;
+            margin: auto;
+        }
+        .btn-back {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: sans-serif;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .list-container {
+            border: 1px solid var(--border-color);
+            background-color: var(--card-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .list-title { text-align: center; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; margin-top: 0; }
+        
+        /* --- CABEÇALHO DE CONJURAÇÃO (AGORA EM GRID 2x2) --- */
+        .spellcasting-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            background: var(--card-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .spell-stat-box { display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .info-label { font-size: 0.7rem; color: #666; text-transform: uppercase; }
+        .spell-stat-value {
+            font-size: 1.6rem; font-weight: bold; color: var(--accent-color);
+            margin-top: 5px; height: 35px; display: flex; align-items: center; justify-content: center;
+        }
+        .spell-stat-select {
+            margin-top: 5px; padding: 5px; border: 1px solid var(--border-color);
+            border-radius: 4px; background: var(--bg-color); color: var(--text-color); font-weight: bold;
+            width: 100%; max-width: 120px; text-align: center;
+        }
+        .prep-input {
+            width: 45px; font-size: 1.4rem; text-align: center; border: none; 
+            border-bottom: 1px solid var(--accent-color); background: transparent; 
+            font-weight: bold; color: var(--text-color); font-family: sans-serif;
+        }
+
+        /* Estilos dos Círculos */
+        .circle-block { border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+        .circle-header {
+            background: #eee; padding: 12px; display: flex; justify-content: space-between; 
+            align-items: center; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.9rem;
+        }
+        .slots-config {
+            display: flex; gap: 10px; align-items: center; padding: 10px; background: #f9f9f9; border-bottom: 1px solid #ddd;
+        }
+        .slot-input { width: 45px; text-align: center; border: none; border-bottom: 1px solid var(--accent-color); background: transparent; font-size: 1rem; }
+
+        .spell-list { padding: 10px; display: none; }
+        .spell-item { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
+        .spell-info { cursor: pointer; flex-grow: 1; }
+        .btn-add-spell { 
+            background: var(--accent-color); color: white; border: none; width: 100%;
+            padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px;
+        }
+
+        /* Modais */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content {
+            background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; text-align: center;
+        }
+        .spell-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; margin-top: 15px; }
+        .full-width { grid-column: span 2; }
+        .spell-detail-grid label { font-size: 0.65rem; color: #666; font-weight: bold; }
+        input, textarea { width: 100%; padding: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        
+        .prep-select { padding: 3px; font-size: 0.75rem; border-radius: 4px; border: 1px solid #ccc; }
+        
+        /* --- ESTILOS DE ROLAGEM NO MODAL --- */
+        .damage-row {
+            display: grid;
+            grid-template-columns: 50px 1fr 1fr auto;
+            gap: 5px;
+            align-items: center;
+            background: #f1f1f1;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        .damage-row input, .damage-row select { font-size: 0.8rem; padding: 3px; }
+        .btn-remove-damage {
+            background: none; border: none; color: #b11f2d; 
+            font-weight: bold; cursor: pointer; font-size: 1.1rem;
+        }
+        .attack-toggle {
+            display: flex; align-items: center; gap: 8px;
+            margin: 10px 0; padding: 10px; background: #e3f2fd;
+            border-radius: 4px; border: 1px solid #bbdefb;
+            cursor: pointer; font-size: 0.85rem; font-weight: bold;
+        }
+
+        /* --- ESTILOS DOS BOTÕES DE ROLAGEM NA LISTA --- */
+        .spell-rolls-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-spell-roll {
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid transparent;
+            font-family: sans-serif;
+        }
+        .btn-roll-atk { background: #f0f0f0; color: #333; border-color: #d1d1d1; }
+        .btn-roll-atk:hover { background: #e0e0e0; }
+        
+        .btn-roll-dmg { background: #ffebee; color: #c62828; border-color: #ffcdd2; }
+        .btn-roll-dmg:hover { background: #ffcdd2; }
+
+        /* Estilos para o Log de Rolagens */
+        /* --- ESTILOS DO LOG DE ROLAGENS --- */
+        .log-container {
+            border: 1px solid var(--border-color);
+            background-color: var(--card-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .log-box {
+            max-height: 250px;
+            overflow-y: auto;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .log-entry {
+            background: var(--card-color);
+            border-left: 4px solid var(--accent-color);
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 0 4px 4px 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .log-details {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .log-result {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+        .log-empty { text-align: center; color: #888; font-size: 0.9rem; padding: 20px 0; font-style: italic;}
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <a id="link-voltar" class="btn-back">❮ Voltar para a Ficha</a>
+
+    <div class="list-container">
+        <h3 class="list-title">✨ Livro de Magias</h3>
+        <p id="nome-personagem" style="text-align: center; font-style: italic; margin-top: -10px; color: #666;"></p>
+        
+        <div class="spellcasting-header">
+            <div class="spell-stat-box">
+                <span class="info-label">ATRIBUTO</span>
+                <select id="spell-attr-select" class="spell-stat-select" onchange="window.mudarAtributoConjuracao(this.value)">
+                    <option value="INTELIGÊNCIA">Inteligência</option>
+                    <option value="SABEDORIA">Sabedoria</option>
+                    <option value="CARISMA">Carisma</option>
+                    <option value="FORÇA">Força</option>
+                    <option value="CONSTITUIÇÃO">Constituição</option>
+                    <option value="DESTREZA">Destreza</option>
+                </select>
+            </div>
+            <div class="spell-stat-box">
+                <span class="info-label">MAGIAS PREPARADAS</span>
+                <div class="spell-stat-value" style="color: var(--text-color);">
+                    <span id="prep-atual">0</span> <span style="font-size: 1rem; margin: 0 5px; color: #888;">/</span> 
+                    <input type="number" id="prep-max" class="prep-input" value="0" onchange="window.atualizarMaxPrep(this.value)">
+                </div>
+            </div>
+            <div class="spell-stat-box">
+                <span class="info-label">CD DE MAGIA</span>
+                <div id="spell-dc" class="spell-stat-value">10</div>
+            </div>
+            <div class="spell-stat-box">
+                <span class="info-label">ATAQUE MÁGICO</span>
+                <div id="spell-atk" class="spell-stat-value">+0</div>
+            </div>
+        </div>
+
+        <div id="magic-book">
+            <p style="text-align: center;">Carregando magias...</p>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-magia">
+        <div class="modal-content">
+            <h3 id="modal-titulo">Configurar Magia</h3>
+            <div class="spell-detail-grid">
+                <div class="full-width"><label>NOME</label><input type="text" id="sp-nome"></div>
+                <div><label>CONJURAÇÃO</label><input type="text" id="sp-tempo"></div>
+                <div><label>ALCANCE</label><input type="text" id="sp-alcance"></div>
+                <div><label>COMPONENTES</label>
+                    <div style="display: flex; gap: 15px; margin-top: 5px; margin-bottom: 15px;">
+                        <label style="font-weight: normal; font-size: 0.9rem; cursor: pointer;">
+                            <input type="checkbox" id="sp-comp-v" value="V"> Vocal (V)
+                        </label>
+                        <label style="font-weight: normal; font-size: 0.9rem; cursor: pointer;">
+                            <input type="checkbox" id="sp-comp-s" value="S"> Somático (S)
+                        </label>
+                        <label style="font-weight: normal; font-size: 0.9rem; cursor: pointer;">
+                            <input type="checkbox" id="sp-comp-m" value="M"> Material (M)
+                        </label>
+                    </div></div>
+                <div><label>DURAÇÃO</label><input type="text" id="sp-duracao"></div>
+                <div class="full-width"><label>DESCRIÇÃO</label><textarea id="sp-desc" rows="3"></textarea></div>
+                
+                <div class="full-width">
+                    <label class="attack-toggle">
+                        <input type="checkbox" id="sp-tem-ataque" style="width: auto;"> ⚔️ Requer Jogada de Ataque?
+                    </label>
+                </div>
+
+                <div class="full-width">
+                    <label>ROLAGENS DE DANO / CURA</label>
+                    <div id="dano-list-modal"></div>
+                    <button type="button" class="btn-add-spell" style="background: #5c6bc0; margin-top: 5px;" onclick="window.adicionarLinhaDano()">+ Adicionar Dado</button>
+                </div>
+            </div>
+            <button class="btn-add-spell" style="margin-top: 15px;" onclick="window.confirmarMagia()">Confirmar</button>
+            <button class="btn-add-spell" style="background:#666; margin-top:5px;" onclick="window.fecharModalMagia()">Cancelar</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-rolagem-ataque">
+        <div class="modal-content" style="max-width: 320px;">
+            <h3 id="titulo-rolagem-ataque">Rolar Ataque</h3>
+            <button class="btn-add-spell" style="background:#2196f3; font-size: 1.1rem;" onclick="window.executarRolagemAtaque('normal')">🎲 Normal</button>
+            <button class="btn-add-spell" style="background:#4caf50; font-size: 1.1rem;" onclick="window.executarRolagemAtaque('vantagem')">📈 Com Vantagem</button>
+            <button class="btn-add-spell" style="background:#f44336; font-size: 1.1rem;" onclick="window.executarRolagemAtaque('desvantagem')">📉 Com Desvantagem</button>
+            <button class="btn-add-spell" style="background:#666; margin-top:15px;" onclick="document.getElementById('modal-rolagem-ataque').style.display='none'">Cancelar</button>
+        </div>
+    </div>
+
+    <div class="log-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 class="list-title" style="margin: 0;">📜 Registro de Rolagens</h3>
+            <button onclick="window.limparLog()" style="background: none; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 0.7rem; padding: 2px 8px;">Limpar Log</button>
+        </div>
+        <div class="log-box" id="dice-log">
+            <div class="log-empty" id="log-empty-msg">Nenhuma rolagem feita ainda.</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc, setDoc, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCNnl95-aJGntyBdGP8g4jqIue_tYbLcek",
+            authDomain: "dedvtt-77.firebaseapp.com",
+            projectId: "dedvtt-77",
+            storageBucket: "dedvtt-77.firebasestorage.app",
+            messagingSenderId: "372808860116",
+            appId: "1:372808860116:web:ff19b425c957084c0a1641"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const FICHA_ID = urlParams.get('id');
+        
+        
+        if(!FICHA_ID) window.location.href = 'index.html';
+        document.getElementById('link-voltar').href = `ficha.html?id=${FICHA_ID}`;
+
+        // Variáveis Globais
+        window.magias = [];
+        window.slotsMagia = {};
+        for(let i=1; i<=9; i++) { window.slotsMagia[i] = {total: 0, gastos: 0}; }
+        window.tempCirculoAlvo = null;
+        window.magiaEmEdicao = null;
+        
+        window.profBonus = 0;
+        window.atributosFicha = [];
+        window.atributoConjuracao = "INTELIGÊNCIA";
+        window.maxMagiasPreparadas = 0;
+
+        // Cálculos
+        window.calcularStatusMagia = function() {
+            const attr = window.atributosFicha.find(a => a.nome === window.atributoConjuracao);
+            const valorBase = attr ? attr.valor : 10;
+            const mod = Math.floor((valorBase - 10) / 2);
+            
+            const cd = 8 + mod + window.profBonus;
+            const atk = mod + window.profBonus;
+
+            document.getElementById('spell-dc').textContent = cd;
+            document.getElementById('spell-atk').textContent = (atk >= 0 ? '+' : '') + atk;
+        };
+
+        window.mudarAtributoConjuracao = function(novoValor) {
+            window.atributoConjuracao = novoValor;
+            window.calcularStatusMagia();
+            window.salvarMagiasNoFirebase();
+        };
+
+        window.atualizarMaxPrep = function(val) {
+            window.maxMagiasPreparadas = parseInt(val) || 0;
+            window.calcularMagiasPreparadas();
+            window.salvarMagiasNoFirebase();
+        };
+
+        window.calcularMagiasPreparadas = function() {
+            // Conta apenas magias com o status exato "preparada"
+            const totalPreparadas = window.magias.filter(m => m.preparacao === 'preparada').length;
+            const spanAtual = document.getElementById('prep-atual');
+            
+            if (spanAtual) {
+                spanAtual.textContent = totalPreparadas;
+                // Deixa vermelho se exceder o limite
+                if (window.maxMagiasPreparadas > 0 && totalPreparadas > window.maxMagiasPreparadas) {
+                    spanAtual.style.color = "red";
+                } else {
+                    spanAtual.style.color = "var(--text-color)";
+                }
+            }
+        };
+
+        window.mudarPreparacao = function(circulo, idx, valor) {
+            const magiasDoCirculo = window.magias.filter(m => m.circulo === circulo);
+            const magiaModificada = magiasDoCirculo[idx];
+            const indexReal = window.magias.indexOf(magiaModificada);
+            
+            window.magias[indexReal].preparacao = valor;
+            window.calcularMagiasPreparadas();
+            window.renderizarMagias();
+            window.salvarMagiasNoFirebase(); 
+        };
+
+        // Interface Gráfica
+        window.renderizarMagias = function() {
+            const container = document.getElementById('magic-book');
+            container.innerHTML = ''; 
+
+            for (let i = 0; i <= 9; i++) {
+                const magiasDoCirculo = window.magias.filter(m => m.circulo === i);
+                const isTruque = i === 0;
+
+                const html = `
+                    <div class="circle-block">
+                        <div class="circle-header" style="cursor: default;">
+                            <span>${isTruque ? 'Truques' : i + 'º Círculo'}</span>
+                            <span>${magiasDoCirculo.length} Magias</span>
+                        </div>
+                        ${!isTruque ? `
+                            <div class="slots-config">
+                                <span class="info-label">Slots Totais:</span>
+                                <input type="number" class="slot-input" value="${window.slotsMagia[i].total}" onchange="window.atualizarSlot(${i}, 'total', this.value)" placeholder="0">
+                                <span class="info-label">Gastos:</span>
+                                <input type="number" class="slot-input" value="${window.slotsMagia[i].gastos}" onchange="window.atualizarSlot(${i}, 'gastos', this.value)" placeholder="0">
+                            </div>
+                        ` : ''}
+                        <div class="spell-list" id="list-circulo-${i}" style="display: block;">
+                            <div id="spells-inner-${i}">
+                                ${magiasDoCirculo.map((m, idx) => {
+                                    const taPreparada = (m.preparacao === 'preparada' || m.preparacao === 'sempre');
+                                    const bgSelect = taPreparada ? '#e8f5e9' : 'white';
+                                    const corTexto = taPreparada ? 'var(--accent-color)' : 'var(--text-color)';
+                                    let botoesRolagem = '';
+                                    if (m.temAtaque) {
+                                        botoesRolagem += `<button class="btn-spell-roll btn-roll-atk" onclick="window.abrirModalAtaque('${m.nome}')">⚔️ Ataque</button>`;
+                                    }
+                                    if (m.rolagensDano && m.rolagensDano.length > 0) {
+                                        m.rolagensDano.forEach((d, dIdx) => {
+                                            const labelDano = `${d.qtd}${d.dado}${d.addMod ? ' + Mod' : ''}`;
+                                            botoesRolagem += `<button class="btn-spell-roll btn-roll-dmg" onclick="window.rolarDanoMagia(${i}, ${idx}, ${dIdx})">💥 ${labelDano}</button>`;
+                                        });
+                                    }
+
+                                    return `
+                                    <div class="spell-item" style="flex-direction: column; align-items: stretch;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <div class="spell-info" onclick="window.verMagia(${i}, ${idx})">
+                                                <strong style="color: ${corTexto}; font-size: 1.1rem;">${m.nome}</strong>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                ${!isTruque ? `
+                                                    <select class="prep-select" style="background: ${bgSelect};" onchange="window.mudarPreparacao(${i}, ${idx}, this.value)">
+                                                        <option value="nao-preparada" ${!m.preparacao || m.preparacao === 'nao-preparada' ? 'selected' : ''}>Não Prep.</option>
+                                                        <option value="preparada" ${m.preparacao === 'preparada' ? 'selected' : ''}>Preparada</option>
+                                                        <option value="sempre" ${m.preparacao === 'sempre' ? 'selected' : ''}>Sempre</option>
+                                                    </select>
+                                                ` : '<span style="font-size: 0.7rem; color: #888; font-style: italic;">Truque</span>'}
+                                                <button onclick="window.abrirModalEdicaoMagia(${i}, ${idx})" style="background:none; border:none; color:var(--accent-color); font-weight:bold; padding: 5px; cursor: pointer; font-size: 1.2rem;">✏️</button>
+                                                <button onclick="window.removerMagia(${i}, ${idx})" style="background:none; border:none; color:red; font-weight:bold; padding: 5px; cursor: pointer; font-size: 1.2rem;">✕</button>
+                                            </div>
+                                        </div>
+                                        ${botoesRolagem ? `<div class="spell-rolls-container">${botoesRolagem}</div>` : ''}
+                                    </div>
+                                    `
+                                }).join('')}
+                            </div>
+                            <button class="btn-add-spell" onclick="window.abrirModalMagia(${i})">+ Adicionar Magia</button>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            }
+            window.calcularMagiasPreparadas();
+        };
+
+
+        window.atualizarSlot = function(i, tipo, val) { 
+            window.slotsMagia[i][tipo] = parseInt(val) || 0; 
+            window.salvarMagiasNoFirebase();  
+        };
+
+        // Magias
+        window.abrirModalMagia = function(circulo) {
+            window.tempCirculoAlvo = circulo;
+            window.magiaEmEdicao = null; // Importante: limpa o rastro de edição
+
+            // 1. Reseta o Título
+            document.getElementById('modal-titulo').textContent = 'Configurar Magia';
+
+            // 2. Limpa os campos de texto
+            document.getElementById('sp-nome').value = '';
+            document.getElementById('sp-tempo').value = '';
+            document.getElementById('sp-alcance').value = '';
+            document.getElementById('sp-duracao').value = '';
+            document.getElementById('sp-desc').value = '';
+
+            // 3. Reseta os Checkboxes de Componentes (conforme fizemos antes)
+            if(document.getElementById('sp-comp-v')) {
+                document.getElementById('sp-comp-v').checked = false;
+                document.getElementById('sp-comp-s').checked = false;
+                document.getElementById('sp-comp-m').checked = false;
+            }
+
+            // 4. Limpa o Check de Ataque e a Lista de Danos
+            document.getElementById('sp-tem-ataque').checked = false;
+            document.getElementById('dano-list-modal').innerHTML = '';
+
+            // 5. Abre o modal
+            document.getElementById('modal-magia').style.display = 'flex';
+        };
+
+        window.fecharModalMagia = function() {
+            document.getElementById('modal-magia').style.display = 'none';
+            
+            // Limpeza de segurança ao fechar
+            document.getElementById('dano-list-modal').innerHTML = '';
+            document.getElementById('sp-tem-ataque').checked = false;
+            window.magiaEmEdicao = null;
+            
+            // Reseta os campos de texto para não sobrarem vultos na próxima abertura
+            const campos = ['sp-nome', 'sp-tempo', 'sp-alcance', 'sp-duracao', 'sp-desc'];
+            campos.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.value = '';
+            });
+        };
+        
+
+        window.abrirModalEdicaoMagia = function(circulo, idx) {
+            const magiasDoCirculo = window.magias.filter(m => m.circulo === circulo);
+            const magia = magiasDoCirculo[idx];
+
+            // Salva o índice real da magia na array principal
+            window.magiaEmEdicao = window.magias.indexOf(magia);
+            window.tempCirculoAlvo = circulo;
+
+            // Muda o título do modal
+            document.getElementById('modal-titulo').textContent = 'Editar Magia';
+
+            // Preenche os campos de texto
+            document.getElementById('sp-nome').value = magia.nome || '';
+            document.getElementById('sp-tempo').value = magia.tempo || '';
+            document.getElementById('sp-alcance').value = magia.alcance || '';
+            const compText = magia.comp || '';
+            document.getElementById('sp-comp-v').checked = compText.includes('V');
+            document.getElementById('sp-comp-s').checked = compText.includes('S');
+            document.getElementById('sp-comp-m').checked = compText.includes('M');
+            document.getElementById('sp-duracao').value = magia.duracao || '';
+            document.getElementById('sp-desc').value = magia.desc || '';
+            document.getElementById('sp-tem-ataque').checked = magia.temAtaque || false;
+
+            // Limpa a lista de danos do modal e recria com os dados da magia
+            document.getElementById('dano-list-modal').innerHTML = '';
+            if (magia.rolagensDano && magia.rolagensDano.length > 0) {
+                magia.rolagensDano.forEach(dano => {
+                    window.adicionarLinhaDano(dano);
+                });
+            }
+
+            document.getElementById('modal-magia').style.display = 'flex';
+        };
+
+        window.removerMagia = function(circulo, idx) {
+            if(confirm("Tem certeza que deseja remover esta magia?")) {
+                const magiasFiltradas = window.magias.filter(m => m.circulo === circulo);
+                const magiaParaRemover = magiasFiltradas[idx];
+                const indexReal = window.magias.indexOf(magiaParaRemover);
+                window.magias.splice(indexReal, 1);
+                window.renderizarMagias();
+                window.salvarMagiasNoFirebase();
+            }
+        };
+
+        window.verMagia = function(circulo, idx) {
+            const magiasFiltradas = window.magias.filter(m => m.circulo === circulo);
+            const m = magiasFiltradas[idx];
+            alert(`--- ${m.nome} ---\n\nTempo: ${m.tempo}\nAlcance: ${m.alcance}\nComp: ${m.comp}\nDuração: ${m.duracao}\n\n${m.desc}`);
+        };
+
+        // Firebase
+        window.salvarMagiasNoFirebase = async function() {
+            try {
+                const docRef = doc(db, "fichas", FICHA_ID);
+                
+                // MUDANÇA AQUI: Usa setDoc com { merge: true } em vez de updateDoc
+                await setDoc(docRef, {
+                    magias: window.magias,
+                    slotsMagia: window.slotsMagia,
+                    atributoConjuracao: window.atributoConjuracao,
+                    maxMagiasPreparadas: window.maxMagiasPreparadas
+                }, { merge: true});
+                
+                // Feedback visual no botão (opcional)
+                const btn = document.querySelector('button[onclick="window.salvarMagiasNoFirebase()"]');
+                if(btn) {
+                    const textoOriginal = btn.textContent;
+                    btn.textContent = "✓ Salvo automaticamente";
+                    btn.style.background = "#1b5e20"; // Verde escuro
+                    setTimeout(() => {
+                        btn.textContent = textoOriginal;
+                        btn.style.background = "#2e7d32";
+                    }, 2000);
+                }
+            } catch (e) { 
+                console.error("Erro ao salvar automaticamente:", e); 
+                alert("Erro de conexão ao salvar as magias!"); // Avisa o usuário se der erro
+            }
+        };
+
+        window.carregarMagias = async function() {
+            try {
+                const docSnap = await getDoc(doc(db, "fichas", FICHA_ID));
+                if (docSnap.exists()) {
+                    const d = docSnap.data();
+                    document.getElementById('nome-personagem').textContent = d.nome || FICHA_ID;
+                    
+                    window.magias = d.magias || [];
+                    window.slotsMagia = d.slotsMagia || window.slotsMagia;
+                    
+                    window.atributoConjuracao = d.atributoConjuracao || "INTELIGÊNCIA";
+                    document.getElementById('spell-attr-select').value = window.atributoConjuracao;
+                    
+                    window.maxMagiasPreparadas = d.maxMagiasPreparadas || 0;
+                    document.getElementById('prep-max').value = window.maxMagiasPreparadas;
+
+                    window.atributosFicha = d.atributos || [];
+                    window.profBonus = parseInt((d.profBonus || "+2").replace('+', '')) || 0;
+                    
+                    window.calcularStatusMagia();
+                }
+                
+                window.renderizarMagias();
+                
+            } catch (error) {
+                console.error(error);
+                document.getElementById('magic-book').innerHTML = "<p style='text-align:center;'>Erro ao carregar magias.</p>";
+            }
+        };
+
+        // --- GERENCIAMENTO DINÂMICO DE DANOS NO MODAL ---
+        window.adicionarLinhaDano = function(dados = null) {
+            const container = document.getElementById('dano-list-modal');
+            const row = document.createElement('div');
+            row.className = 'damage-row';
+            
+            row.innerHTML = `
+                <input type="number" class="dmg-qtd" placeholder="Qtd" value="${dados ? dados.qtd : 1}">
+                <select class="dmg-dado">
+                    <option value="d4" ${dados?.dado === 'd4' ? 'selected' : ''}>d4</option>
+                    <option value="d6" ${dados?.dado === 'd6' ? 'selected' : ''}>d6</option>
+                    <option value="d8" ${dados?.dado === 'd8' ? 'selected' : ''}>d8</option>
+                    <option value="d10" ${dados?.dado === 'd10' ? 'selected' : ''}>d10</option>
+                    <option value="d12" ${dados?.dado === 'd12' ? 'selected' : ''}>d12</option>
+                    <option value="d20" ${dados?.dado === 'd20' ? 'selected' : ''}>d20</option>
+                </select>
+                <label style="font-size: 0.6rem; display:flex; align-items:center; gap:2px;">
+                    <input type="checkbox" class="dmg-mod" ${dados?.addMod ? 'checked' : ''}> +Mod.
+                </label>
+                <button type="button" class="btn-remove-damage" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(row);
+        };
+
+        // --- ATUALIZAR LIMPEZA DO MODAL ---
+        const originalFecharModal = window.fecharModalMagia;
+        window.fecharModalMagia = function() {
+            originalFecharModal();
+            document.getElementById('dano-list-modal').innerHTML = '';
+            document.getElementById('sp-tem-ataque').checked = false;
+            document.getElementById('modal-titulo').textContent = 'Configurar Magia'; // Reseta o título
+            window.magiaEmEdicao = null; // Limpa o estado de edição
+        };
+
+        // --- ATUALIZAR CONFIRMAÇÃO DE MAGIA (Criação e Edição) ---
+        window.confirmarMagia = function() {
+            // 1. Lê os Componentes
+            let componentesArray = [];
+            if (document.getElementById('sp-comp-v').checked) componentesArray.push('V');
+            if (document.getElementById('sp-comp-s').checked) componentesArray.push('S');
+            if (document.getElementById('sp-comp-m').checked) componentesArray.push('M');
+            const componentesFinais = componentesArray.join(', ');
+
+            // 2. Lê as rolagens de dano
+            const rolagensDano = [];
+            document.querySelectorAll('.damage-row').forEach(row => {
+                rolagensDano.push({
+                    qtd: parseInt(row.querySelector('.dmg-qtd').value) || 1,
+                    dado: row.querySelector('.dmg-dado').value,
+                    addMod: row.querySelector('.dmg-mod').checked
+                });
+            });
+
+            // 3. Monta o objeto completo
+            const dadosMagia = {
+                circulo: window.tempCirculoAlvo,
+                nome: document.getElementById('sp-nome').value || "Nova Magia",
+                tempo: document.getElementById('sp-tempo').value,
+                alcance: document.getElementById('sp-alcance').value,
+                comp: componentesFinais,
+                duracao: document.getElementById('sp-duracao').value,
+                desc: document.getElementById('sp-desc').value,
+                temAtaque: document.getElementById('sp-tem-ataque').checked,
+                rolagensDano: rolagensDano
+            };
+
+            // 4. Salva ou Edita
+            if (window.magiaEmEdicao !== null) {
+                // MODO EDIÇÃO: Atualiza a magia existente e preserva a preparação
+                dadosMagia.preparacao = window.magias[window.magiaEmEdicao].preparacao;
+                window.magias[window.magiaEmEdicao] = dadosMagia;
+            } else {
+                // MODO CRIAÇÃO: Adiciona nova magia
+                dadosMagia.preparacao = 'nao-preparada';
+                window.magias.push(dadosMagia);
+            }
+
+            // 5. Atualiza a tela
+            window.fecharModalMagia();
+            window.renderizarMagias();
+            
+            window.salvarMagiasNoFirebase();
+        };
+        
+        // --- ATUALIZAR VISUALIZAÇÃO (Opcional por enquanto) ---
+        window.verMagia = function(circulo, idx) {
+            const m = window.magias.filter(m => m.circulo === circulo)[idx];
+            let infoDano = m.rolagensDano?.map(d => `${d.qtd}${d.dado}${d.addMod ? '+Mod' : ''}`).join(', ') || 'Nenhum';
+            
+            alert(`--- ${m.nome} ---\n\nAtaque: ${m.temAtaque ? 'Sim' : 'Não'}\nDados: ${infoDano}\n\n${m.desc}`);
+        };
+
+        // --- FUNÇÕES DE ROLAGEM DE MAGIA ---
+
+        window.abrirModalAtaque = function(nomeMagia) {
+            // Guarda o nome da magia para ser usado depois
+            window.magiaAtualParaAtaque = nomeMagia;
+            
+            // Atualiza o título e mostra o modal no ecrã
+            const tituloEl = document.getElementById('titulo-rolagem-ataque');
+            if(tituloEl) tituloEl.textContent = `Ataque: ${nomeMagia}`;
+            
+            document.getElementById('modal-rolagem-ataque').style.display = 'flex';
+        };
+
+        window.executarRolagemAtaque = function(tipo) {
+            document.getElementById('modal-rolagem-ataque').style.display = 'none';
+            
+            // Puxa o modificador de ataque mágico calculado
+            const txtAtk = document.getElementById('spell-atk').textContent.replace('+', '');
+            const atkBonus = parseInt(txtAtk) || 0;
+
+            const d1 = Math.floor(Math.random() * 20) + 1;
+            const d2 = Math.floor(Math.random() * 20) + 1;
+            
+            let resultadoFinal = 0;
+            let msg = "";
+
+            if (tipo === 'normal') {
+                resultadoFinal = d1 + atkBonus;
+                msg = `⚔️ Ataque com ${window.magiaAtualParaAtaque}\n\nDado: [ ${d1} ]\nBônus Mágico: ${atkBonus >= 0 ? '+'+atkBonus : atkBonus}\n\nRESULTADO: ${resultadoFinal}`;
+            } else if (tipo === 'vantagem') {
+                const melhor = Math.max(d1, d2);
+                resultadoFinal = melhor + atkBonus;
+                msg = `📈 Ataque com ${window.magiaAtualParaAtaque} (Vantagem)\n\nDados: [ ${d1} ] e [ ${d2} ]\nMelhor: [ ${melhor} ]\nBônus: ${atkBonus >= 0 ? '+'+atkBonus : atkBonus}\n\nRESULTADO: ${resultadoFinal}`;
+            } else if (tipo === 'desvantagem') {
+                const pior = Math.min(d1, d2);
+                resultadoFinal = pior + atkBonus;
+                msg = `📉 Ataque com ${window.magiaAtualParaAtaque} (Desvantagem)\n\nDados: [ ${d1} ] e [ ${d2} ]\nPior: [ ${pior} ]\nBônus: ${atkBonus >= 0 ? '+'+atkBonus : atkBonus}\n\nRESULTADO: ${resultadoFinal}`;
+            }
+
+            alert(msg);
+        };
+
+        window.rolarDanoMagia = function(circulo, idxMagia, idxDano) {
+            const magiasDoCirculo = window.magias.filter(m => m.circulo === circulo);
+            const magia = magiasDoCirculo[idxMagia];
+            const configDano = magia.rolagensDano[idxDano];
+            
+            let mod = 0;
+            if (configDano.addMod) {
+                const attr = window.atributosFicha.find(a => a.nome === window.atributoConjuracao);
+                const valorBase = attr ? attr.valor : 10;
+                mod = Math.floor((valorBase - 10) / 2);
+            }
+
+            const maxDado = parseInt(configDano.dado.replace('d', ''));
+            let somaDados = 0;
+            let rolagens = [];
+            
+            for(let i=0; i < configDano.qtd; i++) {
+                const r = Math.floor(Math.random() * maxDado) + 1;
+                rolagens.push(r);
+                somaDados += r;
+            }
+
+            const total = somaDados + mod;
+            
+            // Envia para o log sincronizado
+            const acao = `Dano: ${magia.nome}`;
+            const detalhes = `${configDano.qtd}${configDano.dado} [${rolagens.join(', ')}] ${configDano.addMod ? '+ Mod(' + mod + ')' : ''}`;
+            
+            window.enviarRolagemMagia(acao, detalhes, total);
+        };
+
+        // Função para escutar o Firebase em tempo real e desenhar na tela
+        window.iniciarListenerDoLog = function() {
+            const docRef = doc(db, "fichas", FICHA_ID);
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const dados = docSnap.data();
+                    
+                    // Salva o nome do personagem para usar nas rolagens
+                    window.nomePersonagem = dados.nome || "Desconhecido";
+                    
+                    const logs = dados.logs || [];
+                    const logContainer = document.getElementById('log-mensagens');
+                    
+                    if(logs.length === 0) {
+                        logContainer.innerHTML = '<span style="color: #888; font-style: italic;">Nenhuma rolagem registrada.</span>';
+                        return;
+                    }
+
+                    logContainer.innerHTML = ''; // Limpa antes de desenhar
+                    
+                    // Pega os últimos 20 logs para não pesar a tela
+                    const logsRecentes = logs.slice(-20);
+                    
+                    logsRecentes.forEach(log => {
+                        logContainer.innerHTML += `
+                            <div style="background: var(--bg-color); padding: 8px; border-radius: 4px; border-left: 4px solid var(--accent-color);">
+                                <strong style="color: var(--accent-color);">${log.personagem}</strong> rolou <b>${log.acao}</b><br>
+                                <span style="font-size: 0.8rem; color: #555;">Fórmula: ${log.formula} ➔ Dados: [${log.dadosRolados}]</span><br>
+                                <strong style="font-size: 1.1rem; color: #000;">Total: ${log.total}</strong>
+                            </div>
+                        `;
+                    });
+                    // Faz o scroll descer automaticamente para a rolagem mais recente
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
+            });
+        };
+
+        // Referência para a mesma coleção de rolagens da ficha
+        const colRef = collection(db, `fichas/${FICHA_ID}/rolagens`);
+
+        // Função que envia a rolagem pro banco
+        window.enviarRolagemMagia = async function(acao, detalhes, resultado) {
+            try {
+                await addDoc(colRef, {
+                    nome: window.nomePersonagem || "Desconhecido",
+                    acao: acao,
+                    resultado: resultado,
+                    detalhes: detalhes,
+                    timestamp: serverTimestamp()
+                });
+            } catch (e) {
+                console.error("Erro ao registrar rolagem:", e);
+            }
+        };
+
+        // Função que escuta rolagens novas e desenha na tela
+        window.ouvirRolagens = function() {
+            const colRef = collection(db, "rolagens");
+            // O 'asc' garante que as novas fiquem no fim, ou use 'desc' para as novas no topo
+            const q = query(colRef, orderBy("timestamp", "asc"), limit(20));
+
+            onSnapshot(q, (snapshot) => {
+                const el = document.getElementById('log-mensagens');
+                if (!el) return;
+                el.innerHTML = '';
+                
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    el.innerHTML += `
+                        <div class="log-item">
+                            <strong>${d.nome}</strong>: ${d.acao}<br>
+                            <small>${d.detalhes}</small> | <b>Total: ${d.resultado}</b>
+                        </div>
+                    `;
+                });
+                el.scrollTop = el.scrollHeight; 
+            });
+        };
+        // Inicia a escuta imediatamente
+
+        // 1. Função para rolagens de Dados/Atributos (que estava faltando no magias.html)
+        window.executarRolagem = async function(tipo) {
+            const d20 = Math.floor(Math.random() * 20) + 1;
+            let resultadoFinal = d20;
+            let detalhes = `d20 (${d20})`;
+
+            if (tipo === 'vantagem') {
+                const d20_2 = Math.floor(Math.random() * 20) + 1;
+                resultadoFinal = Math.max(d20, d20_2);
+                detalhes = `Vantagem: [${d20}, ${d20_2}]`;
+            } else if (tipo === 'desvantagem') {
+                const d20_2 = Math.floor(Math.random() * 20) + 1;
+                resultadoFinal = Math.min(d20, d20_2);
+                detalhes = `Desvantagem: [${d20}, ${d20_2}]`;
+            }
+
+            const novaRolagem = {
+                nome: window.nomePersonagem || "Personagem",
+                acao: "Teste Genérico",
+                detalhes: detalhes,
+                resultado: resultadoFinal,
+                timestamp: serverTimestamp() // CRÍTICO: Sem isso o log não lê
+            };
+
+            try {
+                await addDoc(collection(db, "rolagens"), novaRolagem);
+                window.fecharModal();
+            } catch (e) { console.error("Erro:", e); }
+        };
+
+        // 2. Função de Ataque Mágico Corrigida
+        window.executarRolagemAtaque = async function(tipo) {
+            const d20 = Math.floor(Math.random() * 20) + 1;
+            let resultadoD20 = d20;
+            let detalhes = `d20 (${d20})`;
+
+            if (tipo === 'vantagem') {
+                const d20_2 = Math.floor(Math.random() * 20) + 1;
+                resultadoD20 = Math.max(d20, d20_2);
+                detalhes = `Vantagem: [${d20}, ${d20_2}]`;
+            } else if (tipo === 'desvantagem') {
+                const d20_2 = Math.floor(Math.random() * 20) + 1;
+                resultadoD20 = Math.min(d20, d20_2);
+                detalhes = `Desvantagem: [${d20}, ${d20_2}]`;
+            }
+
+            // Calcula o bônus usando a proficiência carregada
+            const mod = 3; // Idealmente buscar do seu window.atributos
+            const prof = parseInt(window.profBonus || 2);
+            const total = resultadoD20 + mod + prof;
+
+            const novaRolagem = {
+                nome: window.nomePersonagem || "Desconhecido",
+                acao: `Ataque: ${window.magiaAtualParaAtaque || 'Magia'}`,
+                detalhes: `${detalhes} + Mod(${mod}) + Prof(${prof})`,
+                resultado: total,
+                timestamp: serverTimestamp() 
+            };
+
+            try {
+                await addDoc(collection(db, "rolagens"), novaRolagem);
+                window.fecharModalAtaque();
+            } catch (e) { console.error("Erro ao gravar:", e); }
+        };
+
+
+        window.ouvirRolagens();
+        
+        window.carregarMagias();
+    </script>
+</body>
+</html>

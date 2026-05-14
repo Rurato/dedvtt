@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criação - Classe, Nível e Atributos</title>
+    <style>
+        :root { --bg-color: #121212; --card-bg: #1e1e1e; --accent: #e63946; --text-main: #e0e0e0; --disabled: #555; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-color); color: var(--text-main); padding: 20px; padding-bottom: 100px; }
+
+        h2 { border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-top: 30px; font-size: 1.2rem; }
+
+        /* --- 1. CONTROLE DE NÍVEL (Estilo Novo) --- */
+        .level-control {
+            background: #252525; border: 1px solid var(--accent); padding: 15px; border-radius: 8px;
+            display: flex; flex-direction: column; gap: 5px; margin-bottom: 20px;
+            position: sticky; top: 0; z-index: 50; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .level-select {
+            width: 100%; padding: 10px; background: #121212; color: white;
+            border: 1px solid #555; border-radius: 4px; font-size: 1.1rem; font-weight: bold;
+        }
+        .level-select:focus { border-color: var(--accent); outline: none; }
+
+        /* --- 2. CARD DA CLASSE --- */
+        .class-card {
+            background: var(--card-bg); border: 1px solid #333; border-radius: 8px; padding: 15px;
+            margin-bottom: 15px; cursor: pointer; transition: 0.2s;
+        }
+        .class-card.selected { border-color: var(--accent); background: #1a1a1a; }
+        .class-header { display: flex; justify-content: space-between; align-items: center; }
+        .class-name { font-size: 1.3rem; font-weight: bold; color: var(--accent); }
+        .class-des {white-space: pre-wrap;}
+        
+        .class-expanded-area { display: none; margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; }
+        .class-card.selected .class-expanded-area { display: block; animation: fadeIn 0.3s; }
+
+        /* Subclasse e Timeline */
+        .subclass-section { background: #2a2a2a; padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #555; }
+        .timeline-item { font-size: 0.85rem; margin-bottom: 4px; color: #bbb; border-left: 2px solid #444; padding-left: 8px; }
+        .timeline-lvl { color: var(--accent); font-weight: bold; margin-right: 5px; }
+
+        /* Seleção de Perícias */
+        .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; margin-bottom: 15px; }
+        .skill-option { 
+            font-size: 0.8rem; padding: 8px; background: #2a2a2a; border: 1px solid #444; 
+            border-radius: 4px; text-align: center; cursor: pointer; 
+        }
+        .skill-option.checked { background: var(--accent); color: white; border-color: var(--accent); }
+
+        /* --- 3. ATRIBUTOS --- */
+        .attr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        @media (max-width: 360px) { .attr-grid { grid-template-columns: repeat(2, 1fr); } }
+        .attr-box { background: var(--card-bg); padding: 10px; border-radius: 8px; border: 1px solid #333; text-align: center; }
+        .attr-select { width: 100%; background: #333; color: white; border: 1px solid #555; padding: 5px; border-radius: 4px; }
+        .attr-mod-display { font-size: 1.4rem; font-weight: bold; color: var(--accent); }
+
+        /* Rodapé */
+        .btn-next { position: fixed; bottom: 0; right: 0; left: 0; padding: 15px; background: #1a1a1a; border-top: 1px solid #333; display: flex; justify-content: space-between; z-index: 100; }
+        .btn-back { background: transparent; border: 1px solid #555; color: #aaa; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        .btn-action { background: var(--accent); color: white; padding: 10px 20px; border: none; border-radius: 4px; opacity: 0.5; pointer-events: none; font-weight: bold; }
+        .btn-action.active { opacity: 1; pointer-events: all; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* --- ESTILO DO POPUP (MODAL) --- */
+        .modal-overlay {
+            display: none; /* Escondido por padrão */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8); /* Fundo escuro transparente */
+            z-index: 200; /* Fica acima de tudo */
+            justify-content: center; align-items: center;
+            backdrop-filter: blur(2px); /* Efeito de desfoque no fundo */
+        }
+        
+        .modal-box {
+            background: #252525;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid var(--accent);
+            width: 90%; max-width: 400px; /* Não fica gigante no PC */
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            animation: popIn 0.3s ease;
+        }
+
+        .modal-title { font-size: 1.4rem; font-weight: bold; color: var(--accent); margin-bottom: 10px; }
+        .modal-desc { font-size: 1rem; color: #e0e0e0; line-height: 1.5; margin-bottom: 20px; white-space: pre-wrap; }
+        
+        .btn-close {
+            width: 100%; padding: 10px; background: #333; color: white; border: none;
+            border-radius: 5px; font-weight: bold; cursor: pointer;
+        }
+        .btn-close:hover { background: #444; }
+
+        /* Estilo para o link clicável na timeline */
+        .feat-link {
+            color: #ddd; border-bottom: 1px dotted #888; cursor: pointer; transition: 0.2s;
+        }
+        .feat-link:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="level-control">
+        <label style="font-size:0.8rem; color:#aaa;">Nível do Personagem</label>
+        <select id="level-select" class="level-select" onchange="atualizarNivel(this.value)">
+            </select>
+    </div>
+
+    <h2>2. Escolha a Classe</h2>
+    <div id="classes-list"></div>
+
+    <div id="asi-section" style="display:none; margin-top: 20px; border-top: 1px solid #444; padding-top: 10px;">
+        <h3 style="color: #f5a623; font-size: 1rem;">✨ Bônus de Atributo (Níveis Alcançados)</h3>
+        <div id="asi-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+    </div>
+
+    <h2>3. Defina os Atributos</h2>
+    <p style="font-size: 0.8rem; color: #888;">Aloque os valores (15, 14, 13, 12, 10 e 8). Bônus racial é automático.</p>
+    <div class="attr-grid" id="atributos-container"></div>
+
+    <div class="btn-next">
+        <button class="btn-back" onclick="window.location.href='raca.html'">❮ Voltar</button>
+        <button id="btn-finalizar" class="btn-action" onclick="irParaAntecedente()">Próximo: Antecedente ❯</button>
+    </div>
+
+    <script src="../database/barbaro.js"></script>
+    <script src="../database/bardo.js"></script>
+    <script src="../database/bruxo.js"></script>
+    <script src="../database/clerigo.js"></script>
+    <script src="../database/druida.js"></script>
+    <script src="../database/feiticeiro.js"></script>
+    <script src="../database/guerreiro.js"></script>
+
+    <script>
+        // --- CONFIGURAÇÃO ---
+        const classesDB = window.DB_CLASSES.sort((a, b) => a.nome.localeCompare(b.nome));
+
+        // --- VARIÁVEIS DO SISTEMA ---
+        let nivelAtual = 1;
+        let classeSelecionada = null;
+        let subclasseSelecionadaId = null;
+        
+        // Armazena escolhas
+        let periciasEscolhidas = [];
+        let periciasAptidao = [];       // Para Bardo/Ladino (Expertise)
+        let escolhasASI = {};           // Para Atributos (Níveis 4, 8, etc)
+        let invocacoesEscolhidas = [];  // Para Bruxo
+        let dadivaSelecionadaId = null; // Para Bruxo (Pacto)
+        let escolhasEspeciais = {};     // NOVO: Para Clérigo, Totens, Estilos de Luta, etc.
+        
+
+        const arrayPadrao = [15, 14, 13, 12, 10, 8];
+        const atributosList = ['for', 'des', 'con', 'int', 'sab', 'car'];
+        let atributosAlocados = { for: '', des: '', con: '', int: '', sab: '', car: '' };
+        
+        const racaData = JSON.parse(localStorage.getItem('novoPersonagem_raca')) || {};
+        const modificadoresRaca = racaData.modificadoresFinais || { for:0, des:0, con:0, int:0, sab:0, car:0 };
+
+        // --- INICIALIZAÇÃO ---
+        function init() {
+            gerarOpcoesNivel();
+            renderizarClasses();
+            renderizarAtributos();
+        }
+
+        function gerarOpcoesNivel() {
+            const select = document.getElementById('level-select');
+            for(let i=1; i<=20; i++) {
+                select.innerHTML += `<option value="${i}">Nível ${i}</option>`;
+            }
+        }
+
+        // --- LÓGICA DE CLASSE ---
+        function atualizarNivel(val) {
+            nivelAtual = parseInt(val);
+            // Reseta subclasse se nível baixou
+            if (classeSelecionada && nivelAtual < classeSelecionada.nivelSubclasse) {
+                subclasseSelecionadaId = null;
+            }
+            renderizarASI();
+            renderizarAtributos();
+            renderizarClasses();
+            validarTudo();
+        }
+
+        function renderizarClasses() {
+            const container = document.getElementById('classes-list');
+            container.innerHTML = '';
+
+            // Se não tiver classes carregadas, para tudo
+            if (!window.DB_CLASSES || window.DB_CLASSES.length === 0) return;
+
+            // Ordena alfabeticamente
+            const classesOrdenadas = window.DB_CLASSES.sort((a, b) => a.nome.localeCompare(b.nome));
+
+            let listaIdsAtivos = [];
+
+            if (dadivaSelecionadaId) listaIdsAtivos.push(dadivaSelecionadaId);
+
+            if (subclasseSelecionadaId) listaIdsAtivos.push(subclasseSelecionadaId);
+
+            // 2. Adiciona as Invocações (se tiver)
+            // O filter(Boolean) serve para não pegar slots vazios (null/undefined)
+            if (typeof invocacoesEscolhidas !== 'undefined' && Array.isArray(invocacoesEscolhidas)) {
+                listaIdsAtivos.push(...invocacoesEscolhidas.filter(Boolean));
+            }
+            
+
+            classesOrdenadas.forEach(cls => {
+                const isSelected = classeSelecionada && classeSelecionada.id === cls.id;
+                
+                // --- BLOCOS DE HTML ESPECÍFICOS ---
+                
+                // 1. MAGIA (Bardo, Mago, Clérigo) E PACTO (Bruxo)
+                let magicHTML = '';
+                if (isSelected && cls.conjuracao) {
+                    const dadosMagia = cls.conjuracao.tabela[nivelAtual];
+                    if (dadosMagia) {
+                        const totalTruques = typeof getTruquesConhecidos === 'function' ? getTruquesConhecidos(cls, nivelAtual, listaIdsAtivos) : dadosMagia.truques;
+                        const totalConhecidas = typeof getMagiasConhecidas === 'function' ? getMagiasConhecidas(cls, nivelAtual, subclasseSelecionadaId) : dadosMagia.conhecidas;
+                        
+                        let slotsDisplay = '';
+                        if (cls.conjuracao.tipo === 'pacto') {
+                            // Estilo Bruxo (Quadrado Roxo Único)
+                            slotsDisplay = `
+                                <div style="margin-top:5px; padding:8px; background:#4a148c; border:1px solid #7c4dff; border-radius:4px; text-align:center;">
+                                    <div style="font-size:1.5rem; font-weight:bold; color:#fff; line-height:1;">${dadosMagia.slots}</div> 
+                                    <div style="font-size:0.8rem; color:#d1c4e9;">Slots de <b>${dadosMagia.nivelSlot}º Círculo</b></div>
+                                </div>`;
+                        } else {
+                            // Estilo Padrão (Bolinhas)
+                            dadosMagia.slots.forEach((qtd, index) => {
+                                slotsDisplay += `<div style="display:inline-block; margin-right:5px; margin-bottom:5px; background:#333; padding:2px 8px; border-radius:4px; font-size:0.75rem; color:#aaa; border:1px solid #444;">${index+1}º: <span style="color:white; font-weight:bold;">${qtd}</span></div>`;
+                            });
+                        }
+                        let pontosDisplay = '';
+                            if (dadosMagia.pontos && dadosMagia.pontos > 0) {
+                                pontosDisplay = `<span margin-left:10px;">Pontos de Feitiçaria: <b>${dadosMagia.pontos}</b></span>`;
+                            }
+                        magicHTML = `
+                            <div style="margin-top:15px; background:#220a2e; border:1px solid #9b59b6; padding:10px; border-radius:6px;">
+                                <div style="font-size:0.85rem; font-weight:bold; color:#d2b4de; margin-bottom:5px;">🔮 CONJURAÇÃO (Nível ${nivelAtual})</div>
+                                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:10px;">
+                                    <span>Truques: <b>${totalTruques}</b></span>
+                                    <span>Conhecidas: <b>${totalConhecidas}</b></span>
+                                    <span>Atributo: <b>${cls.conjuracao.atributoChave.toUpperCase()}</b></span>
+                                ${pontosDisplay}</div>
+                                <div>${slotsDisplay}</div>
+                            </div>`;
+                    }
+                }
+
+                // 2. ARCANA MÍSTICA (Bruxo Nv 11+)
+                let arcanumHTML = '';
+                if (isSelected && cls.arcanum && cls.arcanum[nivelAtual]) {
+                    const slotsArcanum = cls.arcanum[nivelAtual].map(c => `<span style="border:1px dashed #f1c40f; color:#f1c40f; padding:2px 6px; margin-right:5px; font-size:0.8rem;">${c}º</span>`).join('');
+                    arcanumHTML = `<div style="margin-top:10px; background:#292010; border:1px solid #b7950b; padding:10px; border-radius:6px;">
+                        <div style="font-size:0.8rem; color:#f1c40f; font-weight:bold;">ARCANA MÍSTICA</div>
+                        <div style="margin-top:5px;">${slotsArcanum}</div>
+                    </div>`;
+                }
+
+                // 3. INVOCAÇÕES (Bruxo)
+                let invocacoesHTML = '';
+                if (isSelected && cls.conjuracao && cls.conjuracao.tabela[nivelAtual] && cls.conjuracao.tabela[nivelAtual].invocacoes > 0) {
+                    const qtdSlots = cls.conjuracao.tabela[nivelAtual].invocacoes;
+                    let slotsRender = '';
+                    for(let i=0; i<qtdSlots; i++) {
+                        const invId = invocacoesEscolhidas[i];
+                        const invObj = invId && cls.listaInvocacoes ? cls.listaInvocacoes.find(x => x.id === invId) : null;
+                        if (invObj) {
+                            slotsRender += `<div style="background:#2d2d2d; border:1px solid #9b59b6; padding:8px; margin-bottom:5px; display:flex; justify-content:space-between;">
+                                <span style="color:#d2b4de; font-size:0.85rem;">${invObj.nome}</span>
+                                <button onclick="removerInvocacao(${i})" style="color:#ff5555; background:none; border:none; cursor:pointer;">✕</button>
+                            </div>`;
+                        } else {
+                            slotsRender += `<div onclick="abrirSelecaoInvocacao(${i})" style="background:transparent; border:1px dashed #555; padding:8px; margin-bottom:5px; text-align:center; cursor:pointer; color:#aaa; font-size:0.8rem;">+ Escolher Invocação</div>`;
+                        }
+                    }
+                    invocacoesHTML = `<div style="margin-top:15px; border-top:1px solid #444; padding-top:10px;">
+                        <div style="font-size:0.8rem; color:#9b59b6; font-weight:bold; margin-bottom:5px;">INVOCAÇÕES (${invocacoesEscolhidas.filter(Boolean).length}/${qtdSlots})</div>
+                        ${slotsRender}
+                    </div>`;
+                }
+
+                // 4. DÁDIVA DO PACTO (Bruxo Nv 3)
+                let dadivaHTML = '';
+            if (isSelected && cls.dadivas && nivelAtual >= 3) {
+                const opts = cls.dadivas.map(d => `<option value="${d.id}" ${d.id === dadivaSelecionadaId ? 'selected' : ''}>${d.nome}</option>`).join('');
+                const dadivaAtual = cls.dadivas.find(d => d.id === dadivaSelecionadaId);
+                const descDadiva = dadivaAtual 
+                    ? `<div style="font-size:0.8rem; color:#ccc; margin-top:8px; padding:8px; background:#2a2a2a; border-radius:4px; font-style:italic; border-left: 2px solid #7c4dff;">${dadivaAtual.desc}</div>` 
+                    : '';
+                dadivaHTML = `<div class="subclass-section" style="border-color:#9b59b6;">
+                    <div style="font-size:0.8rem; color:#d2b4de; font-weight:bold; margin-bottom:5px;">DÁDIVA DO PACTO</div>
+                    <select style="width:100%; padding:8px; background:#121212; color:white; border:1px solid #7c4dff; border-radius:4px;" onchange="setDadiva(this.value)">
+                        <option value="">-- Selecione --</option>${opts}
+                    </select>
+                    ${descDadiva} </div>`;
+            }
+
+                // 5. PERÍCIAS (Todas as Classes)
+                let skillsHTML = '';
+                if(isSelected) {
+                    const limitePericias = typeof getLimitePericias === 'function' ? getLimitePericias(cls, subclasseSelecionadaId) : cls.escolhaPericias.qtd;
+                    skillsHTML = `
+                        <div style="font-size:0.8rem; color:#aaa; margin-top:10px;">
+                            ESCOLHA ${limitePericias} PERÍCIAS: <span style="color:${periciasEscolhidas.length === limitePericias ? '#4cd137' : '#f5a623'}">(${periciasEscolhidas.length}/${limitePericias})</span>
+                        </div>
+                        <div class="skills-grid" onclick="event.stopPropagation()">
+                            ${cls.escolhaPericias.lista.map(sk => {
+                                const checked = periciasEscolhidas.includes(sk) ? 'checked' : '';
+                                return `<div class="skill-option ${checked}" onclick="toggleSkill('${sk}')">${sk}</div>`;
+                            }).join('')}
+                        </div>
+                    `;
+                }
+
+                // 6. APTIDÃO/EXPERTISE (Bardo/Ladino Nv 3+)
+                let aptidaoHTML = '';
+                if (isSelected && cls.niveisAptidao && nivelAtual >= 3) {
+                    const limite = nivelAtual >= 10 ? 4 : 2;
+                    const opcoesAptidao = periciasEscolhidas.map(sk => {
+                        const checked = periciasAptidao.includes(sk) ? 'checked' : '';
+                        const styleBorder = checked ? 'border-color:#f1c40f; background:#333; color:#f1c40f' : 'border-color:#444; color:#777';
+                        return `<div class="skill-option" style="${styleBorder}" onclick="toggleAptidao('${sk}', ${limite})">${sk} ${checked ? '★' : ''}</div>`;
+                    }).join('');
+                    aptidaoHTML = `<div style="margin-top:15px; border-top:1px solid #444; padding-top:10px;">
+                        <div style="font-size:0.8rem; color:#f1c40f; font-weight:bold; margin-bottom:5px;">APTIDÃO (EXPERTISE)</div>
+                        <div class="skills-grid">${opcoesAptidao || '<i style="font-size:0.7rem; color:#555">Selecione perícias acima primeiro.</i>'}</div>
+                    </div>`;
+                }
+
+                // 7. SELETOR DE SUBCLASSE
+                let subSelectorHTML = '';
+                if(isSelected && cls.subclasses && nivelAtual >= cls.nivelSubclasse) {
+                    const opts = cls.subclasses.map(s => `<option value="${s.id}" ${s.id === subclasseSelecionadaId ? 'selected':''}>${s.nome}</option>`).join('');
+                    subSelectorHTML = `<div class="subclass-section" onclick="event.stopPropagation()">
+                        <div style="font-size:0.8rem; color:#f5a623; font-weight:bold;">ESCOLHA: ${cls.nomeSubclasse}</div>
+                        <select style="width:100%; padding:5px; background:#121212; color:white; border:1px solid #555;" onchange="setSubclasse('${cls.id}', this.value)">
+                            <option value="">-- Selecione --</option>${opts}
+                        </select>
+                    </div>`;
+                }
+
+                // 8. SISTEMA GENÉRICO (Clérigo, Totens, etc) - NOVO!
+                let especialHTML = '';
+                const processarFeatures = (listaFeatures) => {
+                    if (!listaFeatures) return;
+                    for (let n = 1; n <= nivelAtual; n++) {
+                        if (listaFeatures[n]) {
+                            listaFeatures[n].forEach(feat => {
+                                if (feat && feat.configSelecao) {
+                                    const cfg = feat.configSelecao;
+                                    // Cria o array no escolhasEspeciais se não existir
+                                    if (!escolhasEspeciais[cfg.idUnico]) escolhasEspeciais[cfg.idUnico] = [];
+                                    const selecionados = escolhasEspeciais[cfg.idUnico];
+
+                                    // --- MUDANÇA 1: PREPARAR OS DADOS ---
+                                    // Verifica se é lista de Objetos (Druida) ou Texto Simples (Outros)
+                                    let listaItens = [];
+                                    if (cfg.opcoesObj) {
+                                        // Se tiver opcoesObj, usa ID, Nome e Descrição
+                                        listaItens = cfg.opcoesObj.map(obj => ({
+                                            valor: obj.id,
+                                            texto: obj.nome,
+                                            desc: obj.desc
+                                        }));
+                                    } else if (cfg.opcoes) {
+                                        // Se for só opcoes, usa o texto como ID e Nome, sem descrição
+                                        listaItens = cfg.opcoes.map(txt => ({
+                                            valor: txt,
+                                            texto: txt,
+                                            desc: null
+                                        }));
+                                    }
+                                    const listaFiltrada = listaItens.filter(item => {
+                                    // Verifica se esse item está presente em qualquer OUTRA lista de escolhas
+                                    const estaEmOutraLista = Object.keys(escolhasEspeciais).some(outraKey => {
+                                        // Ignora a lista atual (para você poder ver e desmarcar o que acabou de escolher)
+                                        if (outraKey === cfg.idUnico) return false;
+                                        
+                                        const arrayEscolhas = escolhasEspeciais[outraKey];
+                                        return Array.isArray(arrayEscolhas) && arrayEscolhas.includes(item.valor);
+                                    });
+
+                                    // Só mostra se NÃO estiver em outra lista
+                                    return !estaEmOutraLista;
+                                });
+
+                                // 2. GERAR BOTÕES (Usando agora a listaFiltrada)
+                                const botoesHTML = listaFiltrada.map(item => {
+                                    const isChecked = selecionados.includes(item.valor);
+                                    const border = isChecked ? '#f1c40f' : '#444';
+                                    const bg = isChecked ? '#222' : 'transparent';
+                                    
+                                    let descSafe = '';
+                                    if (item.desc) {
+                                        try { descSafe = btoa(unescape(encodeURIComponent(item.desc))); } catch(e){}
+                                    }
+
+                                    return `
+                                    <div style="display:flex; gap:5px; margin-bottom:5px;">
+                                        <div onclick="toggleEscolhaGenerica('${cfg.idUnico}', '${item.valor}', ${cfg.maximo})" 
+                                            style="flex-grow:1; cursor:pointer; border:1px solid ${border}; padding:8px; font-size:0.8rem; background:${bg}; text-align:center; border-radius:4px; display:flex; align-items:center; justify-content:center;">
+                                            ${item.texto} ${isChecked ? '✔' : ''}
+                                        </div>
+                                        
+                                        ${item.desc ? `
+                                            <button onclick="verHabilidade('${item.texto}', '${descSafe}')" 
+                                                style="width:30px; background:#333; border:1px solid #555; color:#aaa; border-radius:4px; cursor:pointer; font-weight:bold;" title="Ver Detalhes">
+                                                ?
+                                            </button>
+                                        ` : ''}
+                                    </div>`;
+                                }).join('');
+
+                                    especialHTML += `<div style="margin-top:15px; border-top:1px solid #444; padding-top:10px;">
+                                        <div style="font-size:0.8rem; color:#f1c40f; font-weight:bold; margin-bottom:5px;">${cfg.titulo.toUpperCase()} (${selecionados.length}/${cfg.maximo})</div>
+                                        <div style="display:flex; flex-direction:column;">${botoesHTML}</div>
+                                    </div>`                                }
+                            });
+                        }
+                    }
+                };
+                processarFeatures(cls.features); // Features da Classe Base
+                if (subclasseSelecionadaId && cls.subclasses) {
+                    const sub = cls.subclasses.find(s => s.id === subclasseSelecionadaId);
+                    if (sub) processarFeatures(sub.features); // Features da Subclasse
+                }
+
+                // 9. TIMELINE (Descrição dos Níveis)
+                let timelineHTML = '';
+                for(let i=1; i<=nivelAtual; i++) {
+                    const criarLink = (f, isSub) => {
+                        let descSafe = '';
+                        try { descSafe = btoa(unescape(encodeURIComponent(f.desc || ''))); } catch(e){ descSafe = ''; }
+                        const corBadge = isSub ? '#f5a623' : 'var(--accent)';
+                        const textoBadge = isSub ? 'SUB' : `NV${i}`;
+                        return `<div class="timeline-item"><span class="timeline-lvl" style="color:${corBadge}">${textoBadge}</span><span class="feat-link" onclick="verHabilidade('${f.nome || 'Habilidade'}', '${descSafe}')">${f.nome || 'Habilidade'} ⓘ</span></div>`;
+                    };
+                    if(cls.features[i] && Array.isArray(cls.features[i])) {cls.features[i].forEach(f => { if(f) timelineHTML += criarLink(f, false); });
+    }
+                    if(isSelected && subclasseSelecionadaId && i >= cls.nivelSubclasse) {
+                        const sub = cls.subclasses.find(s => s.id === subclasseSelecionadaId);
+                        if(sub && sub.features && sub.features[i] && Array.isArray(sub.features[i])) {sub.features[i].forEach(f => { if(f) timelineHTML += criarLink(f, true); });}
+                    }
+                }
+
+                // --- MONTAGEM DO CARD ---
+                const card = document.createElement('div');
+                card.className = `class-card ${isSelected ? 'selected' : ''}`;
+                card.onclick = () => setClasse(cls.id);
+                card.innerHTML = `
+                    <div class="class-header">
+                        <span class="class-name">${cls.nome}</span>
+                        <span style="font-size:0.8rem; background:#333; padding:2px 6px; border-radius:4px;">d${cls.dadoVida}</span>
+                    </div>
+                    <div class="class-expanded-area">
+                        <div class="class-des">${cls.descricao}</div>
+                        ${skillsHTML}
+                        ${magicHTML}
+                        ${arcanumHTML}
+                        ${invocacoesHTML}
+                        ${dadivaHTML}
+                        ${aptidaoHTML}
+                        ${subSelectorHTML}
+                        ${especialHTML}
+                        <div style="font-size:0.75rem; color:#666; margin-top:10px;">PROGRESSÃO ATÉ NÍVEL ${nivelAtual}:</div>
+                        ${timelineHTML || '<div style="color:#555; font-size:0.8rem">Nada relevante.</div>'}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function setClasse(id) {
+            if (classeSelecionada && classeSelecionada.id === id) return;
+            classeSelecionada = classesDB.find(c => c.id === id);
+            subclasseSelecionadaId = null;
+            periciasEscolhidas = [];
+            periciasAptidao = [];
+            escolhasASI = {}; // Reseta escolhas ao trocar de classe
+            dadivaSelecionadaId = null;
+            renderizarASI(); // <--- CHAMA AQUI
+            renderizarAtributos();
+            renderizarClasses();
+            validarTudo();
+        }
+
+        function setSubclasse(cid, sid) {
+            subclasseSelecionadaId = sid;
+            escolhasEspeciais = {}; // Reseta escolhas genéricas ao trocar
+            renderizarClasses();
+            validarTudo();
+        }
+
+        function toggleSkill(skill) {
+            if (!classeSelecionada) return;
+            
+            // USA A NOVA FUNÇÃO DE LIMITE
+            const max = getLimitePericias(classeSelecionada, subclasseSelecionadaId);
+            
+            if (periciasEscolhidas.includes(skill)) {
+                periciasEscolhidas = periciasEscolhidas.filter(s => s !== skill);
+                // Segurança da Aptidão (se desmarcar a perícia, remove a aptidão dela)
+                periciasAptidao = periciasAptidao.filter(s => s !== skill);
+            } else {
+                if (periciasEscolhidas.length < max) periciasEscolhidas.push(skill);
+                else alert(`Máximo de ${max} perícias permitidas!`);
+            }
+            renderizarClasses();
+            validarTudo();
+        }
+
+        // --- LÓGICA DE ATRIBUTOS ---
+        function renderizarAtributos() {
+            const container = document.getElementById('atributos-container');
+            container.innerHTML = ''; // Limpa pra redesenhar com valores novos
+            
+            atributosList.forEach(attr => {
+                const bonusRaca = modificadoresRaca[attr] || 0;
+                // Calcula o Bônus ASI total para mostrar visualmente (+X)
+                let bonusASI = 0;
+                Object.values(escolhasASI).forEach(e => {
+                    if(e.tipo === 'unico' && e.valores[0] === attr) bonusASI += 2;
+                    if(e.tipo === 'duplo' && (e.valores[0] === attr || e.valores[1] === attr)) bonusASI += 1;
+                });
+                let bonusClasse = 0;
+                if (classeSelecionada) {
+                    for (let i = 1; i <= nivelAtual; i++) {
+                        if (classeSelecionada.features[i]) {
+                            classeSelecionada.features[i].forEach(f => {
+                                if (f.bonusFixo && f.bonusFixo[attr]) bonusClasse += f.bonusFixo[attr];
+                            });
+                        }
+                    }
+                }
+
+                // Formatação dos Textinhos Coloridos
+                const textoBonusRaca = bonusRaca > 0 ? ` <span style="color:#4cd137">+${bonusRaca}</span>` : '';
+                const textoBonusASI = bonusASI > 0 ? ` <span style="color:#f5a623">+${bonusASI}</span>` : '';
+                // Bônus de Classe (Roxo)
+                const textoBonusClasse = bonusClasse > 0 ? ` <span style="color:#be2edd">+${bonusClasse}</span>` : '';
+
+                // Valor Final
+                const total = calcularTotalAtributo(attr);
+                let displayMod = '-';
+                let displayTotal = '-';
+                
+                if (total !== null) {
+                    const mod = Math.floor((total - 10) / 2);
+                    displayTotal = total;
+                    displayMod = (mod >= 0 ? '+' : '') + mod;
+                }
+
+                // Recria o HTML (Importante: mantendo o estado do select de base)
+                container.innerHTML += `
+                    <div class="attr-box">
+                        <label style="font-size:0.8rem; font-weight:bold; color:#aaa;">
+                            ${attr.toUpperCase()} ${textoBonusRaca}${textoBonusASI}${textoBonusClasse}
+                        </label>
+                        
+                        <select class="attr-select" id="sel-${attr}" onchange="setAtributoBase('${attr}', this.value)">
+                            <option value="">--</option>
+                            ${arrayPadrao.map(v => `<option value="${v}">${v}</option>`).join('')}
+                        </select>
+                        
+                        <div style="margin-top:5px; font-size:0.9rem; color:#fff;">Total: <b>${displayTotal}</b></div>
+                        <div class="attr-mod-display">${displayMod}</div>
+                    </div>`;
+            });
+
+            // Restaura os valores dos selects de Base (senão eles resetam visualmente)
+            atualizarSelectsAtributos();
+        }
+
+        function setAtributoBase(attr, val) {
+            atributosAlocados[attr] = val;
+            renderizarAtributos(); // Redesenha para atualizar os totais
+            renderizarClasses();
+            validarTudo();
+        }
+
+        function setAtributo(attr, val) {
+            atributosAlocados[attr] = val;
+            const display = document.getElementById(`mod-${attr}`);
+            if(val) {
+                const total = parseInt(val) + (modificadoresRaca[attr]||0);
+                const mod = Math.floor((total-10)/2);
+                display.innerText = (mod>=0?'+':'') + mod;
+            } else {
+                display.innerText = "-";
+            }
+            atualizarSelectsAtributos();
+            validarTudo();
+        }
+
+        function atualizarSelectsAtributos() {
+            const usados = Object.values(atributosAlocados).filter(v => v !== '');
+            atributosList.forEach(attr => {
+                const sel = document.getElementById(`sel-${attr}`);
+                const valorAtual = atributosAlocados[attr];
+                Array.from(sel.options).forEach(opt => {
+                    if(!opt.value) return;
+                    if(usados.includes(opt.value) && opt.value !== valorAtual) {
+                        opt.disabled = true; opt.innerText = opt.value + " (X)";
+                    } else {
+                        opt.disabled = false; opt.innerText = opt.value;
+                    }
+                });
+                sel.value = valorAtual; 
+            });
+        }
+
+        // --- VALIDAÇÃO ---
+        function validarTudo() {
+            const btn = document.getElementById('btn-finalizar');
+            let valido = true;
+
+            if (!classeSelecionada) valido = false;
+            
+            // 1. Valida Perícias Base
+            if (classeSelecionada) {
+                const limite = typeof getLimitePericias === 'function' ? getLimitePericias(classeSelecionada, subclasseSelecionadaId) : classeSelecionada.escolhaPericias.qtd;
+                if (periciasEscolhidas.length !== limite) valido = false;
+            }
+            
+            // 2. Valida Subclasse
+            if (classeSelecionada && nivelAtual >= classeSelecionada.nivelSubclasse && !subclasseSelecionadaId) valido = false;
+            
+            // 3. Valida Atributos Base
+            if (Object.values(atributosAlocados).some(v => v === '')) valido = false;
+
+            // 4. Valida ASI (Incremento de Atributo)
+            if (classeSelecionada) {
+                const asisNecessarios = classeSelecionada.niveisASI.filter(n => n <= nivelAtual);
+                asisNecessarios.forEach(nivel => {
+                    const escolha = escolhasASI[nivel];
+                    if (!escolha || escolha.valores.some(v => v === '')) valido = false;
+                });
+            }
+            
+            // 5. Valida Aptidão (Bardo/Ladino)
+            if (classeSelecionada && classeSelecionada.niveisAptidao && nivelAtual >= 3) {
+                const limite = nivelAtual >= 10 ? 4 : 2;
+                // Só valida se já escolheu pericias suficientes
+                if (periciasEscolhidas.length >= limite && periciasAptidao.length !== limite) valido = false;
+            }
+
+            // 6. Valida Bruxo (Pacto e Invocações)
+            if (classeSelecionada && classeSelecionada.dadivas && nivelAtual >= 3 && !dadivaSelecionadaId) valido = false;
+            if (classeSelecionada && classeSelecionada.listaInvocacoes && classeSelecionada.conjuracao) {
+                const qtdInv = classeSelecionada.conjuracao.tabela[nivelAtual]?.invocacoes || 0;
+                if (invocacoesEscolhidas.filter(Boolean).length < qtdInv) valido = false;
+            }
+
+            // 7. VALIDAÇÃO GENÉRICA (Clérigo/Totens) - O NOVO SISTEMA
+            const validarFeatures = (features) => {
+                if (!features) return;
+                for (let n = 1; n <= nivelAtual; n++) {
+                    if (features[n]) {
+                        features[n].forEach(f => {
+                            if (f.configSelecao) {
+                                const id = f.configSelecao.idUnico;
+                                const max = f.configSelecao.maximo;
+                                const atuais = escolhasEspeciais[id] ? escolhasEspeciais[id].length : 0;
+                                if (atuais < max) valido = false;
+                            }
+                        });
+                    }
+                }
+            };
+            if (classeSelecionada) {
+                validarFeatures(classeSelecionada.features);
+                if (subclasseSelecionadaId) {
+                    const sub = classeSelecionada.subclasses.find(s => s.id === subclasseSelecionadaId);
+                    if (sub) validarFeatures(sub.features);
+                }
+            }
+
+            if (valido) btn.classList.add('active');
+            else btn.classList.remove('active');
+        }
+
+        function irParaAntecedente() {
+            const dadosFinais = {
+                classe: classeSelecionada,
+                nivel: nivelAtual,
+                subclasseId: subclasseSelecionadaId,
+                pericias: periciasEscolhidas,
+                atributosBase: atributosAlocados
+            };
+            localStorage.setItem('novoPersonagem_classe_completo', JSON.stringify(dadosFinais));
+            window.location.href = 'antecedente.html';
+        }
+        // --- FUNÇÕES DO MODAL ---
+        function verHabilidade(nome, descBase64) {
+            // Decodifica a descrição (truque para evitar erro com aspas ' ou ")
+            const desc = decodeURIComponent(escape(atob(descBase64)));
+            
+            document.getElementById('modal-titulo').innerText = nome;
+            document.getElementById('modal-texto').innerText = desc;
+            document.getElementById('modal-habilidade').style.display = 'flex';
+        }
+
+        
+        function fecharModal() {
+            document.getElementById('modal-habilidade').style.display = 'none';
+        }
+
+        function renderizarASI() {
+            const section = document.getElementById('asi-section');
+            const container = document.getElementById('asi-container');
+            container.innerHTML = '';
+
+            if (!classeSelecionada) {
+                section.style.display = 'none';
+                return;
+            }
+
+            // Filtra quais ASIs o nível atual permite
+            const asisDisponiveis = classeSelecionada.niveisASI.filter(n => n <= nivelAtual);
+
+            if (asisDisponiveis.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+
+            asisDisponiveis.forEach(nivel => {
+                // Recupera estado salvo ou cria vazio
+                if (!escolhasASI[nivel]) {
+                    escolhasASI[nivel] = { tipo: 'unico', valores: [''] }; 
+                }
+                const estado = escolhasASI[nivel];
+
+                // HTML do Seletor de Tipo
+                const htmlTipo = `
+                    <div style="display:flex; gap:15px; margin-bottom:5px; font-size:0.85rem;">
+                        <label style="cursor:pointer">
+                            <input type="radio" name="asi-type-${nivel}" ${estado.tipo === 'unico' ? 'checked' : ''} 
+                            onchange="mudarTipoASI(${nivel}, 'unico')"> +2 em Um
+                        </label>
+                        <label style="cursor:pointer">
+                            <input type="radio" name="asi-type-${nivel}" ${estado.tipo === 'duplo' ? 'checked' : ''} 
+                            onchange="mudarTipoASI(${nivel}, 'duplo')"> +1 em Dois
+                        </label>
+                    </div>
+                `;
+
+                // HTML dos Selects (Com trava de repetição)
+                let htmlSelects = '';
+                const qtdSelects = estado.tipo === 'unico' ? 1 : 2;
+                
+                for(let i=0; i < qtdSelects; i++) {
+                    const valAtual = estado.valores[i] || '';
+                    
+                    // LÓGICA DE TRAVA:
+                    // Se o modo é 'duplo', descobre qual é o valor do "outro" select
+                    // i=0 (primeiro select) -> outro é index 1
+                    // i=1 (segundo select) -> outro é index 0
+                    let valOutro = null;
+                    if (estado.tipo === 'duplo') {
+                        valOutro = estado.valores[1 - i]; // Truque matemático: 1-0=1, 1-1=0
+                    }
+
+                    // Gera as opções
+                    const opts = atributosList.map(attr => {
+                        const isSelected = valAtual === attr;
+                        // Desabilita se: Não é o atual E é igual ao valor do outro select
+                        const isDisabled = (!isSelected && valOutro === attr);
+                        const texto = attr.toUpperCase() + (isDisabled ? " (Já escolhido)" : "");
+                        
+                        return `<option value="${attr}" ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}>${texto}</option>`;
+                    }).join('');
+                    
+                    htmlSelects += `
+                        <select class="attr-select" style="margin-right:5px; width:48%;" 
+                            onchange="atualizarValorASI(${nivel}, ${i}, this.value)">
+                            <option value="">-- Atributo --</option>
+                            ${opts}
+                        </select>
+                    `;
+                }
+
+                const card = document.createElement('div');
+                card.style.background = '#2a2a2a';
+                card.style.padding = '10px';
+                card.style.borderRadius = '5px';
+                card.style.borderLeft = '3px solid #f5a623';
+                card.style.marginBottom = '10px'; // Espaçamento visual
+                
+                card.innerHTML = `
+                    <div style="font-weight:bold; color:#ddd; margin-bottom:5px;">Nível ${nivel}: Escolha seu Bônus</div>
+                    ${htmlTipo}
+                    <div>${htmlSelects}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function mudarTipoASI(nivel, tipo) {
+            // Reseta valores ao mudar de tipo pra evitar bugs
+            escolhasASI[nivel] = { tipo: tipo, valores: tipo === 'unico' ? [''] : ['', ''] };
+            renderizarASI();
+            renderizarAtributos(); // Recalcula totais
+            validarTudo();
+        }
+
+        function atualizarValorASI(nivel, index, attr) {
+            escolhasASI[nivel].valores[index] = attr;
+            renderizarASI();
+            renderizarAtributos(); // O segredo: recalcula tudo lá embaixo em tempo real
+            renderizarClasses();
+            validarTudo();
+        }
+
+        // --- FUNÇÃO AUXILIAR DE CÁLCULO ---
+        function calcularTotalAtributo(attr) {
+            let total = 0;
+            
+            // 1. Base (15, 14...)
+            if (atributosAlocados[attr]) total += parseInt(atributosAlocados[attr]);
+            else return null; 
+
+            // 2. Raça
+            total += (modificadoresRaca[attr] || 0);
+
+            // 3. ASI (Escolhas do Usuário: Nível 4, 8, 12...)
+            Object.values(escolhasASI).forEach(escolha => {
+                if (escolha.tipo === 'unico') {
+                    if (escolha.valores[0] === attr) total += 2;
+                } else {
+                    if (escolha.valores[0] === attr) total += 1;
+                    if (escolha.valores[1] === attr) total += 1;
+                }
+            });
+
+            // 4. BÔNUS FIXOS DE CLASSE (Nível 20 do Bárbaro, etc) - NOVO!
+            if (classeSelecionada) {
+                // Varre todos os níveis até o atual
+                for (let i = 1; i <= nivelAtual; i++) {
+                    if (classeSelecionada.features[i]) {
+                        classeSelecionada.features[i].forEach(feature => {
+                            // Se a habilidade tem bônus fixo programado
+                            if (feature.bonusFixo && feature.bonusFixo[attr]) {
+                                total += feature.bonusFixo[attr];
+                            }
+                        });
+                    }
+                }
+            }
+
+            return total;
+        }
+
+        function toggleAptidao(skill, limite) {
+            if (periciasAptidao.includes(skill)) {
+                // Remover
+                periciasAptidao = periciasAptidao.filter(s => s !== skill);
+            } else {
+                // Adicionar (se tiver espaço)
+                if (periciasAptidao.length < limite) {
+                    periciasAptidao.push(skill);
+                } else {
+                    alert(`Você só pode ter Aptidão em ${limite} perícias neste nível!`);
+                }
+            }
+            renderizarClasses(); // Redesenha para mostrar a estrelinha
+            validarTudo();
+        }
+
+        function getLimitePericias(cls, subId) {
+            let qtd = cls.escolhaPericias.qtd;
+            
+            // Regra do Colégio do Conhecimento (Nível 3+)
+            if (cls.id === 'bardo' && subId === 'colegio_conhecimento' && nivelAtual >= 3) {
+                qtd += 3; // Ganha +3 perícias
+            }
+            
+            return qtd;
+        }
+
+        function getMagiasConhecidas(cls, nivel, subId) {
+            if (!cls.conjuracao || !cls.conjuracao.tabela[nivel]) return 1;
+
+            const config = cls.conjuracao; // Atalho para facilitar leitura
+            
+            // --- LÓGICA 1: MAGIAS PREPARADAS (Druida, Clérigo, Mago) ---
+            // A classe precisa ter a propriedade: tipo: 'preparada'
+            if (config.tipo === 'preparada') {
+                // Pega o atributo dinamicamente (sab, int, car) definido no objeto
+                const attrChave = config.atributoChave; // fallback para sabedoria se esquecer de por
+                
+                const totalAttr = calcularTotalAtributo(attrChave);
+                
+                // Se o atributo não foi definido ainda, retorna 1 pra não quebrar
+                if (totalAttr === null) return 1; 
+
+                const mod = Math.floor((totalAttr - 10) / 2);
+
+                // Fórmula: Nível da Classe + Modificador
+                let qtd = nivel + mod;
+                
+                if (qtd < 1) qtd = 1; // Mínimo de 1
+                return qtd;
+            }
+
+            // --- LÓGICA 2: TABELA FIXA (Bardo, Bruxo, Feiticeiro) ---
+            // Se não for 'preparada', assume que é baseada na tabela 'conhecidas'
+            let qtd = config.tabela[nivel].conhecidas || 0;
+
+            // --- LÓGICA DE SUBCLASSE (Bônus Genérico) ---
+            // Se a subclasse tiver um bônus de magias (ex: Bardo do Conhecimento), adicione isso no objeto da subclasse
+            // Exemplo: sub.bonusMagiasConhecidas (Isso remove o if do 'colegio_conhecimento')
+            // Mas mantendo seu padrão atual para não refatorar tudo agora:
+            if (cls.id === 'bardo' && subId === 'colegio_conhecimento' && nivel >= 6) {
+                qtd += 2;
+            }
+
+            return qtd;
+        }
+
+        let slotInvocacaoAtual = -1; // Guarda qual slot estamos editando
+
+        function abrirSelecaoInvocacao(indexSlot) {
+            slotInvocacaoAtual = indexSlot;
+            const container = document.getElementById('lista-selecao-container');
+            container.innerHTML = '';
+            
+            // Pega a lista do Bruxo
+            const invs = classeSelecionada.listaInvocacoes;
+            
+            invs.forEach(inv => {
+                // Filtra: Não mostrar as que já escolhi (exceto se for editar, mas aqui é simples)
+                if (invocacoesEscolhidas.includes(inv.id)) return;
+
+                // Aqui você poderia filtrar por Nível/Pré-requisito se quisesse ser chique
+                // if (nivelAtual < 5 && inv.req.includes('Nv 5')) return; 
+
+                const item = document.createElement('div');
+                item.style.cssText = "background:#333; padding:10px; border-radius:5px; cursor:pointer; border:1px solid #444;";
+                item.onclick = () => confirmarInvocacao(inv.id);
+                item.innerHTML = `
+                    <div style="color:var(--accent); font-weight:bold;">${inv.nome}</div>
+                    <div style="font-size:0.75rem; color:#aaa;">Req: ${inv.req}</div>
+                    <div style="font-size:0.8rem; color:#ddd; margin-top:3px;">${inv.desc}</div>
+                `;
+                container.appendChild(item);
+            });
+            
+            document.getElementById('modal-selecao').style.display = 'flex';
+        }
+
+        function confirmarInvocacao(id) {
+            invocacoesEscolhidas[slotInvocacaoAtual] = id;
+            // Limpa arrays vazios/nulos pra ficar bonito
+            invocacoesEscolhidas = invocacoesEscolhidas.filter(Boolean);
+            
+            fecharSelecao();
+            renderizarClasses();
+            validarTudo();
+        }
+
+        function removerInvocacao(index) {
+            invocacoesEscolhidas.splice(index, 1);
+            renderizarClasses();
+            validarTudo();
+        }
+
+        function fecharSelecao() {
+            document.getElementById('modal-selecao').style.display = 'none';
+        }
+
+        function setDadiva(id) {
+            dadivaSelecionadaId = id;
+            renderizarClasses(); // Redesenha para atualizar descrições
+            validarTudo();
+        }
+
+        function getTruquesConhecidos(cls, nivel, idsAtivos = []) {
+            // Validação básica da tabela
+            if (!cls.conjuracao || !cls.conjuracao.tabela[nivel]) return 0;
+            
+            // 1. Pega o valor BASE da tabela
+            let total = cls.conjuracao.tabela[nivel].truques || 0;
+
+            // 2. Loop GENÉRICO por todas as seleções do usuário
+            // Se idsAtivos for apenas uma string (ex: só o pacto), converte pra array
+            const lista = Array.isArray(idsAtivos) ? idsAtivos : [idsAtivos];
+
+            lista.forEach(id => {
+                // Usa a função auxiliar para pegar os dados do JSON (bruxo.js)
+                const opcao = buscarOpcao(cls, id, nivel);
+
+                // Se a opção existe e tem modificadores de truque, aplica a matemática
+                if (opcao && opcao.modificadores && opcao.modificadores.bonusTruques) {
+                    total += opcao.modificadores.bonusTruques;
+                }
+            });
+
+            // Garante que não retorne negativo (embora 0 seja possível no seu caso do livro)
+            return total < 0 ? 0 : total;
+        }
+
+        function buscarOpcao(cls, idBusca, nivel) {
+            if (!idBusca) return null;
+
+            // 1. Procura nas DÁDIVAS (Pactos)
+            if (cls.dadivas) {
+                const encontrada = cls.dadivas.find(op => op.id === idBusca);
+                if (encontrada) return encontrada;
+            }
+
+            // 2. Procura nas INVOCAÇÕES
+            if (cls.listaInvocacoes) {
+                const encontrada = cls.listaInvocacoes.find(op => op.id === idBusca);
+                if (encontrada) return encontrada;
+            }
+
+            // 3. Procura nas SUBCLASSES (caso alguma dê bônus futuro)
+            if (cls.subclasses) {
+                const aux =  cls.subclasses.find(op => op.id === idBusca);
+                if(aux.features[nivel]){
+                    const encontrada = aux.features[nivel].find(f => f.modificadores);
+                    if (encontrada) return encontrada;
+                }
+            }
+            return null; // Não achou nada
+        }
+
+        function toggleEscolhaGenerica(idUnico, opcao, maximo) {
+        if (!escolhasEspeciais[idUnico]) escolhasEspeciais[idUnico] = [];
+        const lista = escolhasEspeciais[idUnico];
+
+        if (lista.includes(opcao)) {
+            // Se já tem, remove
+            escolhasEspeciais[idUnico] = lista.filter(item => item !== opcao);
+        } else {
+            // Se não tem, adiciona (respeitando limite)
+            if (lista.length < maximo) {
+                escolhasEspeciais[idUnico].push(opcao);
+            } else {
+                alert(`Você só pode selecionar ${maximo} opção(ões)!`);
+            }
+        }
+        renderizarClasses();
+        validarTudo();
+    }
+
+        init();
+    </script>
+    <div id="modal-habilidade" class="modal-overlay" onclick="fecharModal()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <div id="modal-titulo" class="modal-title">Título</div>
+            <div id="modal-texto" class="modal-desc">Descrição...</div>
+            <button class="btn-close" onclick="fecharModal()">Entendi</button>
+        </div>
+    </div>
+    <div id="modal-selecao" class="modal-overlay" style="display:none;" onclick="fecharSelecao()">
+        <div class="modal-box" onclick="event.stopPropagation()" style="max-height:80vh; overflow-y:auto;">
+            <div class="modal-title">Escolher Invocação</div>
+            <div id="lista-selecao-container" style="display:flex; flex-direction:column; gap:10px;">
+                </div>
+            <button class="btn-close" style="margin-top:15px;" onclick="fecharSelecao()">Cancelar</button>
+        </div>
+    </div>
+</body>
+</html>
