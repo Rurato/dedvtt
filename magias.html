@@ -758,7 +758,7 @@
             const acao = `Ataque: ${window.magiaAtualParaAtaque || 'Magia'}`;
             const detalhesCompletos = `${detalhes} + Bônus Mágico(${atkBonus})`;
             
-            await window.enviarRolagemMagia(acao, detalhesCompletos, total);
+            await window.enviarRolagemMagia(acao, detalhesCompletos, total, tipo);
         };
 
         // 3. Rolar Dano da Magia
@@ -784,25 +784,28 @@
             }
 
             const total = somaDados + mod;
-            const acao = `Dano: ${magia.nome}`;
+            const acao = `${magia.nome}`;
             const detalhes = `${configDano.qtd}${configDano.dado} [${rolagens.join(', ')}] ${configDano.addMod ? '+ Mod(' + mod + ')' : ''}`;
+            const tipo = "Efeito";
             
-            window.enviarRolagemMagia(acao, detalhes, total);
+            window.enviarRolagemMagia(acao, detalhes, total, tipo);
         };
 
        // 4. Enviar para o Log Global
-        window.enviarRolagemMagia = async function(acao, detalhes, resultado) {
+        window.enviarRolagemMagia = async function(acao, detalhes, resultado, tipo) {
             // APONTANDO PARA A COLEÇÃO RAIZ "rolagens"
             const colRef = collection(db, 'rolagens'); 
             const nomePers = document.getElementById('nome-personagem').textContent || "Desconhecido";
             
             try {
                 await addDoc(colRef, {
-                    nome: nomePers,
-                    acao: acao,
+                    fichaId: FICHA_ID,
+                    personagem: nomePers,
+                    nome: acao,
                     resultado: resultado,
                     detalhes: detalhes,
-                    timestamp: serverTimestamp()
+                    timestamp: Date.now(),
+                    tipo: tipo
                 });
             } catch (e) {
                 console.error("Erro ao registrar rolagem:", e);
@@ -816,7 +819,7 @@
         window.ouvirRolagens = function() {
             const colRef = collection(db, 'rolagens');
             // Mudamos de "asc" para "desc" para trazer os mais recentes primeiro
-            const q = query(colRef, orderBy("timestamp", "desc"), limit(30));
+            const q = query(colRef, orderBy("timestamp", "desc"));
 
             onSnapshot(q, (snapshot) => {
                 const el = document.getElementById('dice-log'); 
@@ -836,8 +839,8 @@
                     el.innerHTML += `
                         <div class="log-entry">
                             <div class="log-header">
-                                <span>${d.nome}</span>
-                                <span>${d.acao}</span>
+                                <span>${d.personagem}</span>
+                                <span>${d.nome} (${d.tipo})</span>
                             </div>
                             <div class="log-details">${d.detalhes}</div>
                             <div class="log-result">Total: ${d.resultado}</div>
@@ -857,16 +860,14 @@
             });
         };
 
-        // 6. Limpar o Log Global
         // 6. Limpar o Log apenas da Ficha Atual
         window.limparLog = async function() {
             const nomePers = document.getElementById('nome-personagem').textContent || "Desconhecido";
-            
             if(confirm(`Tem a certeza que deseja limpar apenas as rolagens de ${nomePers}?`)) {
                 const colRef = collection(db, 'rolagens');
                 
                 // Filtra para encontrar APENAS as rolagens feitas por este personagem
-                const q = query(colRef, where("nome", "==", nomePers));
+                const q = query(colRef, where("fichaId", "==", FICHA_ID));
                 
                 try {
                     const snapshot = await getDocs(q);
@@ -880,6 +881,19 @@
                 }
             }
         };
+/*
+        window.limparLog = async function() {
+            if(!confirm("Deseja apagar permanentemente o histórico de rolagens desta ficha?")) return;
+            try {
+                const q = query(collection(db, "rolagens"), where("fichaId", "==", FICHA_ID));
+                const snapshot = await getDocs(q);
+                const batch = writeBatch(db);
+                snapshot.forEach((doc) => batch.delete(doc.ref));
+                await batch.commit();
+            } catch (e) {
+                console.error("Erro ao limpar log:", e);
+            }
+        };*/
 
         // Inicia tudo
         window.ouvirRolagens();
