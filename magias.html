@@ -308,7 +308,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, setDoc, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, setDoc, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, limit, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCNnl95-aJGntyBdGP8g4jqIue_tYbLcek",
@@ -721,51 +721,49 @@
             alert(`--- ${m.nome} ---\n\nAtaque: ${m.temAtaque ? 'Sim' : 'Não'}\nDados: ${infoDano}\n\n${m.desc}`);
         };
 
-        // --- FUNÇÕES DE ROLAGEM DE MAGIA ---
+        // --- FUNÇÕES DE ROLAGEM DE MAGIA E LOG ---
 
+        // 1. Abrir Modal de Ataque
         window.abrirModalAtaque = function(nomeMagia) {
-            // Guarda o nome da magia para ser usado depois
             window.magiaAtualParaAtaque = nomeMagia;
-            
-            // Atualiza o título e mostra o modal no ecrã
             const tituloEl = document.getElementById('titulo-rolagem-ataque');
             if(tituloEl) tituloEl.textContent = `Ataque: ${nomeMagia}`;
-            
             document.getElementById('modal-rolagem-ataque').style.display = 'flex';
         };
 
-        window.executarRolagemAtaque = function(tipo) {
-            document.getElementById('modal-rolagem-ataque').style.display = 'none';
-            
-            // Puxa o modificador de ataque mágico calculado
-            const txtAtk = document.getElementById('spell-atk').textContent.replace('+', '');
-            const atkBonus = parseInt(txtAtk) || 0;
-
+        // 2. Executar Rolagem de Ataque
+        window.executarRolagemAtaque = async function(tipo) {
             const d1 = Math.floor(Math.random() * 20) + 1;
             const d2 = Math.floor(Math.random() * 20) + 1;
-            
-            let resultadoFinal = 0;
-            let msg = "";
+            let resultadoD20 = d1;
+            let detalhes = `d20 (${d1})`;
 
-            if (tipo === 'normal') {
-                resultadoFinal = d1 + atkBonus;
-                msg = `⚔️ Ataque com ${window.magiaAtualParaAtaque}\n\nDado: [ ${d1} ]\nBônus Mágico: ${atkBonus >= 0 ? '+'+atkBonus : atkBonus}\n\nRESULTADO: ${resultadoFinal}`;
-            } else if (tipo === 'vantagem') {
-                const melhor = Math.max(d1, d2);
-                resultadoFinal = melhor + atkBonus;
-                msg = `📈 Ataque com ${window.magiaAtualParaAtaque} (Vantagem)\n\nDados: [ ${d1} ] e [ ${d2} ]\nMelhor: [ ${melhor} ]\nBônus: ${atkBonus >= 0 ? '+'+atkBonus : atkBonus}\n\nRESULTADO: ${resultadoFinal}`;
+            if (tipo === 'vantagem') {
+                resultadoD20 = Math.max(d1, d2);
+                detalhes = `Vantagem: [${d1}, ${d2}] (Usou ${resultadoD20})`;
             } else if (tipo === 'desvantagem') {
-                const pior = Math.min(d1, d2);
-                resultadoFinal = pior + atkBonus;
-                msg = `📉 Ataque com ${window.magiaAtualParaAtaque} (Desvantagem)\n\nDados: [ ${d1} ] e [ ${d2} ]\nPior: [ ${pior} ]\nBônus: ${atkBonus >= 0 ? '+'+atkBonus : atkBonus}\n\nRESULTADO: ${resultadoFinal}`;
+                resultadoD20 = Math.min(d1, d2);
+                detalhes = `Desvantagem: [${d1}, ${d2}] (Usou ${resultadoD20})`;
             }
 
-            alert(msg);
+            // Puxa o modificador de ataque mágico calculado na tela
+            const txtAtk = document.getElementById('spell-atk').textContent.replace('+', '');
+            const atkBonus = parseInt(txtAtk) || 0;
+            const total = resultadoD20 + atkBonus;
+
+            // Fecha o modal logo a seguir
+            document.getElementById('modal-rolagem-ataque').style.display = 'none';
+
+            // Envia para o log
+            const acao = `Ataque: ${window.magiaAtualParaAtaque || 'Magia'}`;
+            const detalhesCompletos = `${detalhes} + Bônus Mágico(${atkBonus})`;
+            
+            await window.enviarRolagemMagia(acao, detalhesCompletos, total);
         };
 
+        // 3. Rolar Dano da Magia
         window.rolarDanoMagia = function(circulo, idxMagia, idxDano) {
-            const magiasDoCirculo = window.magias.filter(m => m.circulo === circulo);
-            const magia = magiasDoCirculo[idxMagia];
+            const magia = window.magias.filter(m => m.circulo === circulo)[idxMagia];
             const configDano = magia.rolagensDano[idxDano];
             
             let mod = 0;
@@ -786,60 +784,21 @@
             }
 
             const total = somaDados + mod;
-            
-            // Envia para o log sincronizado
             const acao = `Dano: ${magia.nome}`;
             const detalhes = `${configDano.qtd}${configDano.dado} [${rolagens.join(', ')}] ${configDano.addMod ? '+ Mod(' + mod + ')' : ''}`;
             
             window.enviarRolagemMagia(acao, detalhes, total);
         };
 
-        // Função para escutar o Firebase em tempo real e desenhar na tela
-        window.iniciarListenerDoLog = function() {
-            const docRef = doc(db, "fichas", FICHA_ID);
-            onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const dados = docSnap.data();
-                    
-                    // Salva o nome do personagem para usar nas rolagens
-                    window.nomePersonagem = dados.nome || "Desconhecido";
-                    
-                    const logs = dados.logs || [];
-                    const logContainer = document.getElementById('log-mensagens');
-                    
-                    if(logs.length === 0) {
-                        logContainer.innerHTML = '<span style="color: #888; font-style: italic;">Nenhuma rolagem registrada.</span>';
-                        return;
-                    }
-
-                    logContainer.innerHTML = ''; // Limpa antes de desenhar
-                    
-                    // Pega os últimos 20 logs para não pesar a tela
-                    const logsRecentes = logs.slice(-20);
-                    
-                    logsRecentes.forEach(log => {
-                        logContainer.innerHTML += `
-                            <div style="background: var(--bg-color); padding: 8px; border-radius: 4px; border-left: 4px solid var(--accent-color);">
-                                <strong style="color: var(--accent-color);">${log.personagem}</strong> rolou <b>${log.acao}</b><br>
-                                <span style="font-size: 0.8rem; color: #555;">Fórmula: ${log.formula} ➔ Dados: [${log.dadosRolados}]</span><br>
-                                <strong style="font-size: 1.1rem; color: #000;">Total: ${log.total}</strong>
-                            </div>
-                        `;
-                    });
-                    // Faz o scroll descer automaticamente para a rolagem mais recente
-                    logContainer.scrollTop = logContainer.scrollHeight;
-                }
-            });
-        };
-
-        // Referência para a mesma coleção de rolagens da ficha
-        const colRef = collection(db, `fichas/${FICHA_ID}/rolagens`);
-
-        // Função que envia a rolagem pro banco
+       // 4. Enviar para o Log Global
         window.enviarRolagemMagia = async function(acao, detalhes, resultado) {
+            // APONTANDO PARA A COLEÇÃO RAIZ "rolagens"
+            const colRef = collection(db, 'rolagens'); 
+            const nomePers = document.getElementById('nome-personagem').textContent || "Desconhecido";
+            
             try {
                 await addDoc(colRef, {
-                    nome: window.nomePersonagem || "Desconhecido",
+                    nome: nomePers,
                     acao: acao,
                     resultado: resultado,
                     detalhes: detalhes,
@@ -850,100 +809,62 @@
             }
         };
 
-        // Função que escuta rolagens novas e desenha na tela
+        // 5. Escutar Rolagens do Log Global
         window.ouvirRolagens = function() {
-            const colRef = collection(db, "rolagens");
-            // O 'asc' garante que as novas fiquem no fim, ou use 'desc' para as novas no topo
-            const q = query(colRef, orderBy("timestamp", "asc"), limit(20));
+            // APONTANDO PARA A COLEÇÃO RAIZ "rolagens"
+            const colRef = collection(db, 'rolagens');
+            const q = query(colRef, orderBy("timestamp", "asc"), limit(30));
 
             onSnapshot(q, (snapshot) => {
-                const el = document.getElementById('log-mensagens');
+                const el = document.getElementById('dice-log'); 
                 if (!el) return;
+                
+                if (snapshot.empty) {
+                    el.innerHTML = '<div class="log-empty" id="log-empty-msg">Nenhuma rolagem feita ainda.</div>';
+                    return;
+                }
+
                 el.innerHTML = '';
                 
                 snapshot.forEach(doc => {
                     const d = doc.data();
                     el.innerHTML += `
-                        <div class="log-item">
-                            <strong>${d.nome}</strong>: ${d.acao}<br>
-                            <small>${d.detalhes}</small> | <b>Total: ${d.resultado}</b>
+                        <div class="log-entry">
+                            <div class="log-header">
+                                <span>${d.nome}</span>
+                                <span>${d.acao}</span>
+                            </div>
+                            <div class="log-details">${d.detalhes}</div>
+                            <div class="log-result">Total: ${d.resultado}</div>
                         </div>
                     `;
                 });
+                
                 el.scrollTop = el.scrollHeight; 
             });
         };
-        // Inicia a escuta imediatamente
 
-        // 1. Função para rolagens de Dados/Atributos (que estava faltando no magias.html)
-        window.executarRolagem = async function(tipo) {
-            const d20 = Math.floor(Math.random() * 20) + 1;
-            let resultadoFinal = d20;
-            let detalhes = `d20 (${d20})`;
-
-            if (tipo === 'vantagem') {
-                const d20_2 = Math.floor(Math.random() * 20) + 1;
-                resultadoFinal = Math.max(d20, d20_2);
-                detalhes = `Vantagem: [${d20}, ${d20_2}]`;
-            } else if (tipo === 'desvantagem') {
-                const d20_2 = Math.floor(Math.random() * 20) + 1;
-                resultadoFinal = Math.min(d20, d20_2);
-                detalhes = `Desvantagem: [${d20}, ${d20_2}]`;
+        // 6. Limpar o Log Global
+        window.limparLog = async function() {
+            if(confirm("Tem a certeza que deseja limpar o log para TODOS os jogadores?")) {
+                // APONTANDO PARA A COLEÇÃO RAIZ "rolagens"
+                const colRef = collection(db, 'rolagens');
+                const q = query(colRef);
+                try {
+                    const snapshot = await getDocs(q);
+                    snapshot.forEach(async (docSnap) => {
+                        await deleteDoc(docSnap.ref);
+                    });
+                } catch(e) {
+                    console.error("Erro ao limpar log global: ", e);
+                }
             }
-
-            const novaRolagem = {
-                nome: window.nomePersonagem || "Personagem",
-                acao: "Teste Genérico",
-                detalhes: detalhes,
-                resultado: resultadoFinal,
-                timestamp: serverTimestamp() // CRÍTICO: Sem isso o log não lê
-            };
-
-            try {
-                await addDoc(collection(db, "rolagens"), novaRolagem);
-                window.fecharModal();
-            } catch (e) { console.error("Erro:", e); }
         };
 
-        // 2. Função de Ataque Mágico Corrigida
-        window.executarRolagemAtaque = async function(tipo) {
-            const d20 = Math.floor(Math.random() * 20) + 1;
-            let resultadoD20 = d20;
-            let detalhes = `d20 (${d20})`;
-
-            if (tipo === 'vantagem') {
-                const d20_2 = Math.floor(Math.random() * 20) + 1;
-                resultadoD20 = Math.max(d20, d20_2);
-                detalhes = `Vantagem: [${d20}, ${d20_2}]`;
-            } else if (tipo === 'desvantagem') {
-                const d20_2 = Math.floor(Math.random() * 20) + 1;
-                resultadoD20 = Math.min(d20, d20_2);
-                detalhes = `Desvantagem: [${d20}, ${d20_2}]`;
-            }
-
-            // Calcula o bônus usando a proficiência carregada
-            const mod = 3; // Idealmente buscar do seu window.atributos
-            const prof = parseInt(window.profBonus || 2);
-            const total = resultadoD20 + mod + prof;
-
-            const novaRolagem = {
-                nome: window.nomePersonagem || "Desconhecido",
-                acao: `Ataque: ${window.magiaAtualParaAtaque || 'Magia'}`,
-                detalhes: `${detalhes} + Mod(${mod}) + Prof(${prof})`,
-                resultado: total,
-                timestamp: serverTimestamp() 
-            };
-
-            try {
-                await addDoc(collection(db, "rolagens"), novaRolagem);
-                window.fecharModalAtaque();
-            } catch (e) { console.error("Erro ao gravar:", e); }
-        };
-
-
+        // Inicia tudo
         window.ouvirRolagens();
-        
         window.carregarMagias();
+        
     </script>
 </body>
 </html>
