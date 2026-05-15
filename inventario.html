@@ -201,8 +201,22 @@
             
             <div style="background:#eee; padding:10px; border-radius:4px; margin: 10px 0;">
                 <label style="font-size:0.9rem; font-weight:bold; display:block; margin-bottom:5px;">
-                    <input type="checkbox" id="item-tem-ataque"> Possui Rolagem de Ataque?
+                    <input type="checkbox" id="item-tem-ataque" onchange="document.getElementById('config-ataque').style.display = this.checked ? 'block' : 'none'"> Possui Rolagem de Ataque?
                 </label>
+                <div id="config-ataque" style="display:none; margin-top:10px; border-top:1px solid #ccc; padding-top:10px;">
+                    <label style="font-size:0.85rem;">Atributo do Ataque:</label>
+                    <select id="item-attr-ataque" style="margin-bottom:10px; padding:5px; width:100%;">
+                        <option value="">Nenhum</option>
+                        <option value="forca">Força</option>
+                        <option value="destreza">Destreza</option>
+                        <option value="inteligencia">Inteligência</option>
+                        <option value="sabedoria">Sabedoria</option>
+                        <option value="carisma">Carisma</option>
+                    </select>
+                    <label style="font-size:0.85rem; font-weight:bold;">
+                        <input type="checkbox" id="item-prof-ataque"> Somar Bônus de Proficiência?
+                    </label>
+                </div>
             </div>
             
             <div style="background:#eee; padding:10px; border-radius:4px; margin: 10px 0;">
@@ -255,9 +269,11 @@
             document.getElementById('item-desc').value = '';
             document.getElementById('item-peso').value = '';
             document.getElementById('item-tem-ataque').checked = false;
+            document.getElementById('item-attr-ataque').value = '';
+            document.getElementById('item-prof-ataque').checked = false;
+            document.getElementById('config-ataque').style.display = 'none';
         };
 
-        // Função para abrir o modal preenchido para edição
         window.abrirModalEditar = function(id) {
             const item = window.itensInventario[id]; 
             if(!item) return;
@@ -266,9 +282,13 @@
             document.getElementById('item-nome').value = item.nome;
             document.getElementById('item-desc').value = item.desc || "";
             document.getElementById('item-peso').value = item.peso || 0;
-            document.getElementById('item-tem-ataque').checked = item.temAtaque || false;
             
-            // Carrega os danos salvos ou cria uma lista vazia
+            // Dados do Ataque
+            document.getElementById('item-tem-ataque').checked = item.temAtaque || false;
+            document.getElementById('item-attr-ataque').value = item.attrAtaque || '';
+            document.getElementById('item-prof-ataque').checked = item.profAtaque || false;
+            document.getElementById('config-ataque').style.display = item.temAtaque ? 'block' : 'none';
+            
             window.rolagensDanoItemAtual = item.rolagensDano ? JSON.parse(JSON.stringify(item.rolagensDano)) : [];
             window.renderDanosItemAtual();
             
@@ -290,26 +310,22 @@
             const desc = document.getElementById('item-desc').value;
             const peso = parseFloat(document.getElementById('item-peso').value) || 0;
             const temAtaque = document.getElementById('item-tem-ataque').checked;
-
+            
             if(!nome) return;
 
             const dadosItem = {
                 nome, desc, peso, temAtaque, 
-                rolagensDano: window.rolagensDanoItemAtual, // Salva o Array de danos
+                attrAtaque: document.getElementById('item-attr-ataque').value,
+                profAtaque: document.getElementById('item-prof-ataque').checked,
+                rolagensDano: window.rolagensDanoItemAtual,
                 timestamp: serverTimestamp()
             };
 
             try {
-                if (idEdicao) {
-                    const docRef = doc(db, `fichas/${FICHA_ID}/inventario/${idEdicao}`);
-                    await updateDoc(docRef, dadosItem);
-                } else {
-                    await addDoc(collection(db, `fichas/${FICHA_ID}/inventario`), dadosItem);
-                }
+                if (idEdicao) await updateDoc(doc(db, `fichas/${FICHA_ID}/inventario/${idEdicao}`), dadosItem);
+                else await addDoc(collection(db, `fichas/${FICHA_ID}/inventario`), dadosItem);
                 window.fecharModal();
-            } catch (e) {
-                console.error("Erro ao salvar item:", e);
-            }
+            } catch (e) { console.error("Erro ao salvar:", e); }
         };
 
         // Função auxiliar para limpar e fechar o modal
@@ -329,14 +345,14 @@
             window.renderDanosItemAtual();
         };
 
-        // Desenha as caixas de dano na tela
+        // Desenha as caixas de dano na tela com seletor de Atributo
         window.renderDanosItemAtual = function() {
             const container = document.getElementById('lista-danos-item');
             container.innerHTML = '';
             window.rolagensDanoItemAtual.forEach((d, idx) => {
                 container.innerHTML += `
-                    <div style="display:flex; gap:5px; margin-bottom:5px; align-items:center;">
-                        <input type="number" value="${d.qtd}" style="width:40px; padding:4px; margin:0;" onchange="window.updateDanoItem(${idx}, 'qtd', this.value)" title="Quantidade de Dados">
+                    <div style="display:flex; gap:5px; margin-bottom:5px; align-items:center; flex-wrap: wrap;">
+                        <input type="number" value="${d.qtd}" style="width:40px; padding:4px; margin:0;" onchange="window.updateDanoItem(${idx}, 'qtd', this.value)" title="Qtd">
                         <select style="padding:4px; margin:0;" onchange="window.updateDanoItem(${idx}, 'dado', this.value)">
                             <option value="d4" ${d.dado==='d4'?'selected':''}>d4</option>
                             <option value="d6" ${d.dado==='d6'?'selected':''}>d6</option>
@@ -347,7 +363,17 @@
                         </select>
                         <span style="font-weight:bold;">+</span>
                         <input type="number" value="${d.bonus || 0}" style="width:50px; padding:4px; margin:0;" onchange="window.updateDanoItem(${idx}, 'bonus', this.value)" title="Bônus Fixo">
-                        <input type="text" value="${d.tipo || ''}" style="width:80px; padding:4px; margin:0;" placeholder="Tipo (ex: Fogo)" onchange="window.updateDanoItem(${idx}, 'tipo', this.value)">
+                        <input type="text" value="${d.tipo || ''}" style="width:70px; padding:4px; margin:0;" placeholder="Tipo" onchange="window.updateDanoItem(${idx}, 'tipo', this.value)">
+                        
+                        <select style="padding:4px; margin:0; width:100px;" onchange="window.updateDanoItem(${idx}, 'atributo', this.value)">
+                            <option value="" ${!d.atributo?'selected':''}>Mod: Não</option>
+                            <option value="forca" ${d.atributo==='forca'?'selected':''}>+ Força</option>
+                            <option value="destreza" ${d.atributo==='destreza'?'selected':''}>+ Destreza</option>
+                            <option value="inteligencia" ${d.atributo==='inteligencia'?'selected':''}>+ Int.</option>
+                            <option value="sabedoria" ${d.atributo==='sabedoria'?'selected':''}>+ Sab.</option>
+                            <option value="carisma" ${d.atributo==='carisma'?'selected':''}>+ Caris.</option>
+                        </select>
+
                         <button onclick="window.removerDanoItem(${idx})" style="background:none; border:none; color:red; cursor:pointer;">❌</button>
                     </div>
                 `;
@@ -392,7 +418,7 @@
                             
                             ${(item.rolagensDano || []).map((d, i) => `
                                 <button class="btn-action" onclick="window.rolarDanoItem('${id}', ${i})">
-                                    Dano (${d.qtd}${d.dado}${d.bonus > 0 ? '+'+d.bonus : d.bonus < 0 ? d.bonus : ''} ${d.tipo})
+                                    Dano (${d.qtd}${d.dado}${d.bonus > 0 ? '+'+d.bonus : d.bonus < 0 ? d.bonus : ''} ${d.atributo})
                                 </button>
                             `).join('')}
                             
@@ -416,7 +442,6 @@
         };
 
         // --- ROLAGENS E LOG ---
-
         window.enviarRolagem = async (acao, detalhes, resultado) => {
             const nomePers = document.getElementById('nome-personagem').textContent;
             await addDoc(collection(db, 'rolagens'), {
@@ -480,13 +505,23 @@
             }
         };
 
-        // Carregar Ficha: Nome, Força e Tamanho
+       // Guarda os atributos para usar nas rolagens
+        window.atributosPersonagem = {};
+        window.proficienciaPersonagem = 2;
+
+        // Carregar Ficha: Nome, Força, Atributos e Tamanho
         getDoc(doc(db, "fichas", FICHA_ID)).then(d => {
             if(d.exists()) {
                 const data = d.data();
                 document.getElementById('nome-personagem').textContent = data.nome || "Desconhecido";
                 
-                // 1. Procurar a Força
+                // Salva atributos globais
+                window.atributosPersonagem = data.atributos || {};
+                
+                // Tenta puxar a proficiência salva ou calcula baseada no nível (1 ao 4 = +2, 5 ao 8 = +3...)
+                window.proficienciaPersonagem = parseInt(data.profBonus);
+
+                // 1. Procurar a Força para o peso
                 let forca = 10; 
                 if (data.atributos) {
                     if (Array.isArray(data.atributos)) {
@@ -497,27 +532,19 @@
                     }
                 }
 
-                // 2. Procurar o Tamanho e definir o Multiplicador (Baseado na sua imagem)
+                // 2. Procurar o Tamanho e definir o Multiplicador
                 let tamanho = (data.tamanho || "médio").toLowerCase();
-                let multiplicador = 15; // Padrão (Pequeno ou Médio)
+                let multiplicador = 15; 
 
-                if (tamanho.includes("miúdo") || tamanho.includes("miudo")) {
-                    multiplicador = 7.5;
-                } else if (tamanho.includes("grande")) {
-                    multiplicador = 30;
-                } else if (tamanho.includes("enorme")) {
-                    multiplicador = 60;
-                } else if (tamanho.includes("imenso")) {
-                    multiplicador = 120;
-                } else if (tamanho.includes("colossal")) {
-                    multiplicador = 240;
-                }
+                if (tamanho.includes("miúdo") || tamanho.includes("miudo")) multiplicador = 7.5;
+                else if (tamanho.includes("grande")) multiplicador = 30;
+                else if (tamanho.includes("enorme")) multiplicador = 60;
+                else if (tamanho.includes("imenso")) multiplicador = 120;
+                else if (tamanho.includes("colossal")) multiplicador = 240;
 
-                // 3. Calcula a Carga Máxima (Força x Multiplicador)
+                // 3. Calcula a Carga Máxima
                 const cargaMaxima = forca * multiplicador; 
                 document.getElementById('max-weight').textContent = cargaMaxima;
-                
-                // Atualiza a barra visual
                 window.atualizarBarraPeso();
             }
         });
@@ -537,6 +564,76 @@
             } else {
                 barra.style.background = "var(--accent-color)";
             }
+        };
+
+        // Extrai o modificador de um atributo (ex: 16 de força = +3)
+        window.getModificador = function(attrBusca) {
+            if (!attrBusca) return 0;
+            let valor = 10;
+            // Procura o atributo pelas três primeiras letras para não ter problemas com acentos (ex: "for")
+            const termo = attrBusca.substring(0,3).toLowerCase();
+            
+            if (Array.isArray(window.atributosPersonagem)) {
+                const attr = window.atributosPersonagem.find(a => a.nome.toLowerCase().includes(termo));
+                if (attr) valor = parseInt(attr.valor) || 10;
+            } else {
+                const chave = Object.keys(window.atributosPersonagem).find(k => k.toLowerCase().includes(termo));
+                if (chave) valor = parseInt(window.atributosPersonagem[chave]) || 10;
+            }
+            return Math.floor((valor - 10) / 2);
+        };
+
+        // Rolagem de Ataque
+        window.rolarAtaqueItem = async (id) => {
+            const item = window.itensInventario[id];
+            const d20 = Math.floor(Math.random() * 20) + 1;
+            
+            let mod = 0;
+            let prof = 0;
+            let detalhes = `d20(${d20})`;
+
+            if (item.attrAtaque) {
+                mod = window.getModificador(item.attrAtaque);
+                detalhes += ` + ${item.attrAtaque.substring(0,3).toUpperCase()}(${mod})`;
+            }
+            if (item.profAtaque) {
+                prof = window.proficienciaPersonagem || 2;
+                detalhes += ` + Prof(${prof})`;
+            }
+
+            const total = d20 + mod + prof;
+            window.enviarRolagem(`Ataque: ${item.nome}`, detalhes, total);
+        };
+
+        // Rolagem de Dano
+        window.rolarDanoItem = async (id, idxDano) => {
+            const item = window.itensInventario[id];
+            const d = item.rolagensDano[idxDano];
+            
+            let total = 0;
+            let rolagens = [];
+            const faces = parseInt(d.dado.replace('d', ''));
+            
+            for(let i=0; i < d.qtd; i++) {
+                const r = Math.floor(Math.random() * faces) + 1;
+                rolagens.push(r);
+                total += r;
+            }
+
+            // Calcula o Modificador do Atributo se escolhido
+            let modAttr = 0;
+            let textoMod = '';
+            if (d.atributo) {
+                modAttr = window.getModificador(d.atributo);
+                textoMod = modAttr >= 0 ? `+Mod(${modAttr})` : `${modAttr}`;
+            }
+
+            total += (d.bonus || 0) + modAttr;
+            
+            const txtBonus = d.bonus > 0 ? `+${d.bonus}` : d.bonus < 0 ? `${d.bonus}` : '';
+            const desc = `${d.qtd}${d.dado}${txtBonus} ${textoMod} ${d.tipo}`;
+            
+            window.enviarRolagem(`Dano: ${item.nome}`, `${desc} [${rolagens.join(',')}]`, total);
         };
 
     </script>
