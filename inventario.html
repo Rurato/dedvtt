@@ -201,9 +201,14 @@
             
             <div style="background:#eee; padding:10px; border-radius:4px; margin: 10px 0;">
                 <label style="font-size:0.9rem; font-weight:bold; display:block; margin-bottom:5px;">
-                    <input type="checkbox" id="item-tem-ataque"> Ativável (Ataque/Dano)
+                    <input type="checkbox" id="item-tem-ataque"> Possui Rolagem de Ataque?
                 </label>
-                <input type="text" id="item-dado-dano" placeholder="Dado de Dano (ex: 1d8+3)">
+            </div>
+            
+            <div style="background:#eee; padding:10px; border-radius:4px; margin: 10px 0;">
+                <label style="font-size:0.9rem; font-weight:bold; display:block; margin-bottom:5px;">Rolagens de Dano</label>
+                <div id="lista-danos-item"></div>
+                <button onclick="window.addLinhaDanoItem()" style="background:var(--accent-color); color:white; border:none; padding:5px 10px; border-radius:4px; font-size:0.8rem; cursor:pointer; margin-top:5px;">+ Adicionar Dano</button>
             </div>
 
             <div style="display:flex; gap:10px; margin-top:15px;">
@@ -236,17 +241,25 @@
         // --- FUNÇÕES DE INVENTÁRIO ---
 
         window.abrirModalNovoItem = function() {
-            // Primeiro limpamos tudo usando a função que já criamos
             window.fecharModal(); 
-            // Agora garantimos que o título volta a ser "Novo Item"
             document.getElementById('modal-titulo').textContent = "Novo Item";
-            // E finalmente abrimos
+            window.rolagensDanoItemAtual = []; // Reseta os danos
+            window.renderDanosItemAtual();
             document.getElementById('modal-item').style.display = 'flex';
+        };
+        
+        window.fecharModal = function() {
+            document.getElementById('modal-item').style.display = 'none';
+            document.getElementById('item-id-edicao').value = '';
+            document.getElementById('item-nome').value = '';
+            document.getElementById('item-desc').value = '';
+            document.getElementById('item-peso').value = '';
+            document.getElementById('item-tem-ataque').checked = false;
         };
 
         // Função para abrir o modal preenchido para edição
         window.abrirModalEditar = function(id) {
-            const item = window.itensInventario[id]; // Busca o item na memória
+            const item = window.itensInventario[id]; 
             if(!item) return;
 
             document.getElementById('item-id-edicao').value = id;
@@ -254,7 +267,10 @@
             document.getElementById('item-desc').value = item.desc || "";
             document.getElementById('item-peso').value = item.peso || 0;
             document.getElementById('item-tem-ataque').checked = item.temAtaque || false;
-            document.getElementById('item-dado-dano').value = item.dano || "";
+            
+            // Carrega os danos salvos ou cria uma lista vazia
+            window.rolagensDanoItemAtual = item.rolagensDano ? JSON.parse(JSON.stringify(item.rolagensDano)) : [];
+            window.renderDanosItemAtual();
             
             document.getElementById('modal-titulo').textContent = "Editar Item";
             document.getElementById('modal-item').style.display = 'flex';
@@ -274,25 +290,22 @@
             const desc = document.getElementById('item-desc').value;
             const peso = parseFloat(document.getElementById('item-peso').value) || 0;
             const temAtaque = document.getElementById('item-tem-ataque').checked;
-            const dano = document.getElementById('item-dado-dano').value;
 
             if(!nome) return;
 
             const dadosItem = {
-                nome, desc, peso, temAtaque, dano, timestamp: serverTimestamp()
+                nome, desc, peso, temAtaque, 
+                rolagensDano: window.rolagensDanoItemAtual, // Salva o Array de danos
+                timestamp: serverTimestamp()
             };
 
             try {
                 if (idEdicao) {
-                    // Se tem ID, atualiza o documento existente
                     const docRef = doc(db, `fichas/${FICHA_ID}/inventario/${idEdicao}`);
                     await updateDoc(docRef, dadosItem);
                 } else {
-                    // Se não tem ID, cria um novo
                     await addDoc(collection(db, `fichas/${FICHA_ID}/inventario`), dadosItem);
                 }
-
-                // Fecha e limpa o modal
                 window.fecharModal();
             } catch (e) {
                 console.error("Erro ao salvar item:", e);
@@ -300,15 +313,51 @@
         };
 
         // Função auxiliar para limpar e fechar o modal
-        window.fecharModal = function() {
-            document.getElementById('modal-item').style.display = 'none';
-            document.getElementById('item-id-edicao').value = '';
-            document.getElementById('item-nome').value = '';
-            document.getElementById('item-desc').value = '';
-            document.getElementById('item-peso').value = '';
-            document.getElementById('item-tem-ataque').checked = false;
-            document.getElementById('item-dado-dano').value = '';
-            document.getElementById('modal-titulo').textContent = "Novo Item";
+
+        // Variável que guarda os danos enquanto você edita o item
+        window.rolagensDanoItemAtual = [];
+
+        // Adiciona uma nova linha em branco de dano
+        window.addLinhaDanoItem = function(dano = { qtd: 1, dado: 'd8', bonus: 0, tipo: 'Cortante' }) {
+            window.rolagensDanoItemAtual.push(dano);
+            window.renderDanosItemAtual();
+        };
+
+        // Remove uma linha de dano
+        window.removerDanoItem = function(idx) {
+            window.rolagensDanoItemAtual.splice(idx, 1);
+            window.renderDanosItemAtual();
+        };
+
+        // Desenha as caixas de dano na tela
+        window.renderDanosItemAtual = function() {
+            const container = document.getElementById('lista-danos-item');
+            container.innerHTML = '';
+            window.rolagensDanoItemAtual.forEach((d, idx) => {
+                container.innerHTML += `
+                    <div style="display:flex; gap:5px; margin-bottom:5px; align-items:center;">
+                        <input type="number" value="${d.qtd}" style="width:40px; padding:4px; margin:0;" onchange="window.updateDanoItem(${idx}, 'qtd', this.value)" title="Quantidade de Dados">
+                        <select style="padding:4px; margin:0;" onchange="window.updateDanoItem(${idx}, 'dado', this.value)">
+                            <option value="d4" ${d.dado==='d4'?'selected':''}>d4</option>
+                            <option value="d6" ${d.dado==='d6'?'selected':''}>d6</option>
+                            <option value="d8" ${d.dado==='d8'?'selected':''}>d8</option>
+                            <option value="d10" ${d.dado==='d10'?'selected':''}>d10</option>
+                            <option value="d12" ${d.dado==='d12'?'selected':''}>d12</option>
+                            <option value="d20" ${d.dado==='d20'?'selected':''}>d20</option>
+                        </select>
+                        <span style="font-weight:bold;">+</span>
+                        <input type="number" value="${d.bonus || 0}" style="width:50px; padding:4px; margin:0;" onchange="window.updateDanoItem(${idx}, 'bonus', this.value)" title="Bônus Fixo">
+                        <input type="text" value="${d.tipo || ''}" style="width:80px; padding:4px; margin:0;" placeholder="Tipo (ex: Fogo)" onchange="window.updateDanoItem(${idx}, 'tipo', this.value)">
+                        <button onclick="window.removerDanoItem(${idx})" style="background:none; border:none; color:red; cursor:pointer;">❌</button>
+                    </div>
+                `;
+            });
+        };
+
+        // Atualiza a memória quando você digita algo nas caixas de dano
+        window.updateDanoItem = function(idx, campo, valor) {
+            if(campo === 'qtd' || campo === 'bonus') valor = parseInt(valor) || 0;
+            window.rolagensDanoItemAtual[idx][campo] = valor;
         };
 
        // Guarda os itens carregados para podermos acessar sem quebrar o HTML
@@ -340,7 +389,12 @@
                         ${item.desc ? `<div class="item-desc">${item.desc}</div>` : ''}
                         <div class="item-actions">
                             ${item.temAtaque ? `<button class="btn-action" onclick="window.rolarAtaqueItem('${id}')">Ataque</button>` : ''}
-                            ${item.dano ? `<button class="btn-action" onclick="window.rolarDanoItem('${id}')">Dano (${item.dano})</button>` : ''}
+                            
+                            ${(item.rolagensDano || []).map((d, i) => `
+                                <button class="btn-action" onclick="window.rolarDanoItem('${id}', ${i})">
+                                    Dano (${d.qtd}${d.dado}${d.bonus > 0 ? '+'+d.bonus : d.bonus < 0 ? d.bonus : ''} ${d.tipo})
+                                </button>
+                            `).join('')}
                             
                             <div style="margin-left:auto; display:flex; gap:10px;">
                                 <button onclick="window.abrirModalEditar('${id}')" style="background:none; border:none; cursor:pointer; font-size:1rem;">✏️</button>
@@ -376,22 +430,25 @@
         };
 
         // Função de Rolar Dano
-        window.rolarDanoItem = async (id) => {
+        window.rolarDanoItem = async (id, idxDano) => {
             const item = window.itensInventario[id];
-            try {
-                const clean = item.dano.replace(/\s+/g, '');
-                const [dice, bonus] = clean.split('+');
-                const [qtd, faces] = dice.split('d').map(Number);
-                let total = 0;
-                let rolagens = [];
-                for(let i=0; i<qtd; i++) {
-                    const r = Math.floor(Math.random() * faces) + 1;
-                    rolagens.push(r);
-                    total += r;
-                }
-                if(bonus) total += Number(bonus);
-                window.enviarRolagem(`Dano: ${item.nome}`, `${item.dano} [${rolagens.join(',')}]`, total);
-            } catch(e) { alert("Formato de dado inválido. Use ex: 1d8+2"); }
+            const d = item.rolagensDano[idxDano];
+            
+            let total = 0;
+            let rolagens = [];
+            const faces = parseInt(d.dado.replace('d', ''));
+            
+            for(let i=0; i < d.qtd; i++) {
+                const r = Math.floor(Math.random() * faces) + 1;
+                rolagens.push(r);
+                total += r;
+            }
+            total += (d.bonus || 0); // Adiciona o bônus ao final
+            
+            const txtBonus = d.bonus > 0 ? `+${d.bonus}` : d.bonus < 0 ? `${d.bonus}` : '';
+            const desc = `${d.qtd}${d.dado}${txtBonus} ${d.tipo}`;
+            
+            window.enviarRolagem(`Dano: ${item.nome}`, `${desc} [${rolagens.join(',')}]`, total);
         };
 
         let primeiraCargaLog = true;
