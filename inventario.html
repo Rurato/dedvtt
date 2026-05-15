@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventário</title>
+    <style>
+        :root {
+            --bg-color: #fdfaf3;
+            --card-color: #ffffff;
+            --text-color: #1a1a1a;
+            --accent-color: #b11f2d;
+            --border-color: #d1d1d1;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 10px;
+            margin: 0;
+            max-width: 600px;
+            margin: auto;
+        }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-back { border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 4px; text-decoration: none; color: var(--text-color); }
+        
+        /* Stats de Carga */
+        .weight-info {
+            background: var(--card-color);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .weight-bar {
+            background: #eee;
+            height: 10px;
+            border-radius: 5px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        #weight-fill { background: var(--accent-color); height: 100%; width: 0%; transition: width 0.3s; }
+
+        /* Lista de Itens */
+        .item-card {
+            background: var(--card-color);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .item-header { display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .item-desc { font-size: 0.9rem; margin: 8px 0; color: #555; }
+        .item-footer { display: flex; gap: 10px; margin-top: 10px; }
+        
+        .btn-roll {
+            background: #e8e8e8;
+            border: 1px solid #ccc;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .btn-roll:hover { background: #ddd; }
+
+        /* Log de Rolagens (Igual às outras abas) */
+        .log-container { margin-top: 30px; border-top: 2px solid var(--accent-color); padding-top: 10px; }
+        #dice-log { height: 200px; overflow-y: auto; background: #fff; border: 1px solid var(--border-color); padding: 10px; border-radius: 4px; display: flex; flex-direction: column; }
+        .log-entry { border-bottom: 1px solid #eee; padding: 5px 0; font-size: 0.85rem; }
+        .log-header-entry { display: flex; justify-content: space-between; font-weight: bold; color: var(--accent-color); }
+
+        /* Modal */
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
+        .modal-content { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; }
+        .modal-content input, .modal-content textarea { width: 100%; margin-bottom: 10px; padding: 8px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="ficha.html" id="link-voltar" class="btn-back">← Voltar</a>
+        <h2 id="nome-personagem">Carregando...</h2>
+        <button onclick="document.getElementById('modal-item').style.display='flex'" style="background:none; border:none; color:var(--accent-color); font-size:1.5rem; cursor:pointer;">+</button>
+    </div>
+
+    <div class="weight-info">
+        <div>Carga: <span id="current-weight">0</span> / <span id="max-weight">75</span> kg</div>
+        <div class="weight-bar"><div id="weight-fill"></div></div>
+    </div>
+
+    <div id="lista-inventario">
+        </div>
+
+    <div class="log-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <h3 style="margin:0">Log de Rolagens</h3>
+            <button onclick="window.limparLog()" style="font-size: 0.7rem; cursor:pointer;">Limpar Meu Log</button>
+        </div>
+        <div id="dice-log"></div>
+    </div>
+
+    <div id="modal-item" class="modal">
+        <div class="modal-content">
+            <h3>Novo Item</h3>
+            <input type="text" id="item-nome" placeholder="Nome do Item">
+            <textarea id="item-desc" placeholder="Função / Descrição"></textarea>
+            <input type="number" id="item-peso" placeholder="Peso (kg)" step="0.1">
+            <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px;">
+                <label><input type="checkbox" id="item-tem-ataque"> Possui Ataque?</label>
+                <input type="text" id="item-dado-dano" placeholder="Dano (ex: 1d8+3)">
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="window.salvarItem()" style="flex:1; background:var(--accent-color); color:white; border:none; padding:10px; border-radius:4px;">Salvar</button>
+                <button onclick="document.getElementById('modal-item').style.display='none'" style="flex:1; padding:10px;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, limit, deleteDoc, getDocs, where } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+        // CONFIGURAÇÃO FIREBASE (Use a mesma do seu projeto)
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCNnl95-aJGntyBdGP8g4jqIue_tYbLcek",
+            authDomain: "dedvtt-77.firebaseapp.com",
+            projectId: "dedvtt-77",
+            storageBucket: "dedvtt-77.firebasestorage.app",
+            messagingSenderId: "372808860116",
+            appId: "1:372808860116:web:ff19b425c957084c0a1641"
+         };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const params = new URLSearchParams(window.location.search);
+        const FICHA_ID = params.get('id');
+        document.getElementById('link-voltar').href = `ficha.html?id=${FICHA_ID}`;
+
+        // --- LÓGICA DE INVENTÁRIO ---
+
+        // Salvar Item
+        window.salvarItem = async function() {
+            const nome = document.getElementById('item-nome').value;
+            const desc = document.getElementById('item-desc').value;
+            const peso = parseFloat(document.getElementById('item-peso').value) || 0;
+            const temAtaque = document.getElementById('item-tem-ataque').checked;
+            const dano = document.getElementById('item-dado-dano').value;
+
+            if(!nome) return alert("Nome é obrigatório");
+
+            await addDoc(collection(db, `fichas/${FICHA_ID}/inventario`), {
+                nome, desc, peso, temAtaque, dano, timestamp: serverTimestamp()
+            });
+
+            document.getElementById('modal-item').style.display = 'none';
+            // Limpar campos
+            document.getElementById('item-nome').value = '';
+            document.getElementById('item-desc').value = '';
+            document.getElementById('item-peso').value = '';
+        };
+
+        // Ouvir itens do inventário
+        onSnapshot(collection(db, `fichas/${FICHA_ID}/inventario`), (snapshot) => {
+            const lista = document.getElementById('lista-inventario');
+            lista.innerHTML = '';
+            let pesoTotal = 0;
+
+            snapshot.forEach(docSnap => {
+                const item = docSnap.data();
+                const id = docSnap.id;
+                pesoTotal += item.peso;
+
+                lista.innerHTML += `
+                    <div class="item-card">
+                        <div class="item-header">
+                            <span>${item.nome}</span>
+                            <span>${item.peso} kg</span>
+                        </div>
+                        <div class="item-desc">${item.desc}</div>
+                        <div class="item-footer">
+                            ${item.temAtaque ? `<button class="btn-roll" onclick="window.rolarAtaqueItem('${item.nome}')">Atacar</button>` : ''}
+                            ${item.dano ? `<button class="btn-roll" onclick="window.rolarDanoItem('${item.nome}', '${item.dano}')">Dano (${item.dano})</button>` : ''}
+                            <button onclick="window.removerItem('${id}')" style="margin-left:auto; background:none; border:none; color:red; cursor:pointer;">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Atualiza peso
+            document.getElementById('current-weight').textContent = pesoTotal.toFixed(1);
+            const max = parseFloat(document.getElementById('max-weight').textContent);
+            const porc = Math.min((pesoTotal / max) * 100, 100);
+            document.getElementById('weight-fill').style.width = porc + '%';
+        });
+
+        window.removerItem = async (id) => { if(confirm("Remover item?")) await deleteDoc(doc(db, `fichas/${FICHA_ID}/inventario/${id}`)); };
+
+        // --- LÓGICA DE ROLAGENS (Log Global) ---
+
+        window.rolarAtaqueItem = async (nome) => {
+            const d20 = Math.floor(Math.random() * 20) + 1;
+            // Aqui você poderia somar bônus de força/destreza se quiser automatizar mais
+            await window.enviarRolagem(`Ataque: ${nome}`, `d20 (${d20})`, d20);
+        };
+
+        window.rolarDanoItem = async (nome, dado) => {
+            // Lógica simples de parse de dado (ex: 1d8+3)
+            const partes = dado.split('d');
+            const qtd = parseInt(partes[0]);
+            const faces = parseInt(partes[1]);
+            let total = 0;
+            for(let i=0; i<qtd; i++) total += Math.floor(Math.random() * faces) + 1;
+            
+            // Soma bônus se houver (ex: +3)
+            if(dado.includes('+')) total += parseInt(dado.split('+')[1]);
+
+            await window.enviarRolagem(`Dano: ${nome}`, `${dado}`, total);
+        };
+
+        window.enviarRolagem = async (acao, detalhes, resultado) => {
+            const nomePers = document.getElementById('nome-personagem').textContent;
+            await addDoc(collection(db, 'rolagens'), {
+                personagem: nomePers,
+                nome: acao, 
+                detalhes, 
+                resultado, 
+                timestamp: serverTimestamp(),
+                fichaId: FICHA_ID
+            });
+        };
+
+        // Listener do Log (Igual ao magias.html)
+        let primeiraCargaLog = true;
+        onSnapshot(query(collection(db, 'rolagens'), orderBy("timestamp", "desc"), limit(20)), (snapshot) => {
+            const el = document.getElementById('dice-log');
+            el.innerHTML = '';
+            snapshot.forEach(doc => {
+                const d = doc.data();
+                el.innerHTML += `
+                    <div class="log-entry">
+                        <div class="log-header-entry"><span>${d.personagem}</span><span>${d.nome}</span></div>
+                        <div>${d.detalhes} | Total: <strong>${d.resultado}</strong></div>
+                    </div>
+                `;
+            });
+            if (!primeiraCargaLog) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            primeiraCargaLog = false;
+        });
+
+        // Carregar Nome da Personagem
+        getDoc(doc(db, "fichas", FICHA_ID)).then(d => {
+            if(d.exists()) document.getElementById('nome-personagem').textContent = d.data().nome;
+        });
+
+    </script>
+</body>
+</html>
