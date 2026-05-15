@@ -406,9 +406,9 @@
             });
 
             document.getElementById('current-weight').textContent = pesoTotal.toFixed(1);
-            const max = parseFloat(document.getElementById('max-weight').textContent);
-            const porc = Math.min((pesoTotal / max) * 100, 100);
-            document.getElementById('weight-fill').style.width = porc + '%';
+            
+            // Chama a nova função em vez da lógica antiga fixa!
+            window.atualizarBarraPeso();
         });
 
         window.removerItem = async (id) => { 
@@ -480,10 +480,64 @@
             }
         };
 
-        // Carregar nome da ficha
+        // Carregar Ficha: Nome, Força e Tamanho
         getDoc(doc(db, "fichas", FICHA_ID)).then(d => {
-            if(d.exists()) document.getElementById('nome-personagem').textContent = d.data().nome;
+            if(d.exists()) {
+                const data = d.data();
+                document.getElementById('nome-personagem').textContent = data.nome || "Desconhecido";
+                
+                // 1. Procurar a Força
+                let forca = 10; 
+                if (data.atributos) {
+                    if (Array.isArray(data.atributos)) {
+                        const attrFor = data.atributos.find(a => a.nome.toLowerCase() === 'força' || a.nome.toLowerCase() === 'forca' || a.nome.toLowerCase() === 'for');
+                        if (attrFor) forca = parseInt(attrFor.valor) || 10;
+                    } else {
+                        forca = parseInt(data.atributos.forca || data.atributos.Força || data.atributos.FOR) || 10;
+                    }
+                }
+
+                // 2. Procurar o Tamanho e definir o Multiplicador (Baseado na sua imagem)
+                let tamanho = (data.tamanho || "médio").toLowerCase();
+                let multiplicador = 15; // Padrão (Pequeno ou Médio)
+
+                if (tamanho.includes("miúdo") || tamanho.includes("miudo")) {
+                    multiplicador = 7.5;
+                } else if (tamanho.includes("grande")) {
+                    multiplicador = 30;
+                } else if (tamanho.includes("enorme")) {
+                    multiplicador = 60;
+                } else if (tamanho.includes("imenso")) {
+                    multiplicador = 120;
+                } else if (tamanho.includes("colossal")) {
+                    multiplicador = 240;
+                }
+
+                // 3. Calcula a Carga Máxima (Força x Multiplicador)
+                const cargaMaxima = forca * multiplicador; 
+                document.getElementById('max-weight').textContent = cargaMaxima;
+                
+                // Atualiza a barra visual
+                window.atualizarBarraPeso();
+            }
         });
+
+        //Função para atualizar a barra visual dinamicamente
+        window.atualizarBarraPeso = function() {
+            const pesoTotal = parseFloat(document.getElementById('current-weight').textContent) || 0;
+            const max = parseFloat(document.getElementById('max-weight').textContent) || 1;
+            const porc = Math.min((pesoTotal / max) * 100, 100);
+            const barra = document.getElementById('weight-fill');
+            
+            barra.style.width = porc + '%';
+            
+            // Se o peso passar do limite, a barra fica vermelha escura para alertar o jogador!
+            if (pesoTotal > max) {
+                barra.style.background = "darkred";
+            } else {
+                barra.style.background = "var(--accent-color)";
+            }
+        };
 
     </script>
 </body>
