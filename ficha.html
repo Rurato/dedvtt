@@ -317,7 +317,18 @@
             <div class="info-group"><input type="text" id="char-alignment"><div class="info-label">TENDÊNCIA</div></div>
             <div class="info-group"><input type="text" id="char-race"><div class="info-label">RAÇA</div></div>
             <div class="info-group"><input type="number" id="char-xp"><div class="info-label">PONTOS DE EXPERIÊNCIA</div></div>
-            <div class="info-group"><input type="text" id="char-background"><div class="info-label">Antecedente</div></div>
+            <div class="info-group"><input type="text" id="char-background"><div class="info-label">ANTECEDENTE</div></div>
+            <div class="info-group"><select id="char-tamanho" class="info-label" onchange="window.mudarAtributoConjuracao(this.value)">
+                    <option value="MINUSCULO">Minúsculo</option>
+                    <option value="PEQUENO">Pequeno</option>
+                    <option value="MEDIO">Médio</option>
+                    <option value="GRANDE">Grande</option>
+                    <option value="ENORME">Enorme</option>
+                    <option value="COLOSSAL">Colossal</option>
+                </select><div class="info-label">TAMANHO</div></div>
+        </div>
+        <div class="">
+            <div class="info-group"><textarea type="text" id="char-desc" style="height: 150px;"></textarea><div class="info-label">Extras</div></div>
         </div>
     </div>
     
@@ -613,6 +624,8 @@
                 deslocamentoVoo: document.getElementById('char-speed-fly').value,
                 deslocamentoEscalada: document.getElementById('char-speed-climb').value,
                 antecedente: document.getElementById('char-background').value,
+                tamanho: document.getElementById('char-tamanho').value,
+                descricao: document.getElementById('char-desc').value,
                 equipamentos: document.getElementById('equip-list') ? document.getElementById('equip-list').value : "",
                 notas: document.getElementById('notes-area') ? document.getElementById('notes-area').value : "",
                 atributos: window.atributos,
@@ -704,6 +717,8 @@
                     document.getElementById('char-class').value = dados.classe || "";
                     document.getElementById('char-alignment').value = dados.alinhamento || "";
                     document.getElementById('char-background').value = dados.antecedente || "";
+                    document.getElementById('char-tamanho').value = dados.tamanho || "";
+                    document.getElementById('char-desc').value = dados.descricao || "";
                     document.getElementById('char-race').value = dados.raca || "";
                     document.getElementById('char-xp').value = dados.xp || "";
                     document.getElementById('prof-bonus').value = dados.profBonus || "+2";

@@ -405,7 +405,7 @@
                 const html = `
                     <div class="circle-block">
                         <div class="circle-header" style="cursor: default;">
-                            <span>${isTruque ? 'Truques' : i + 'º Círculo'}</span>
+                            <span><button onclick="event.stopPropagation(); window.abrirModalNovaMagia(${i})" title="Adicionar Magia" style="background: none; border: none; color: var(--accent-color); font-size: 1.5rem; font-weight: bold; cursor: pointer; padding-top: 0px;">+</button>${isTruque ? 'Truques' : i + 'º Círculo'} </span>
                             <span>${magiasDoCirculo.length} Magias</span>
                         </div>
                         ${!isTruque ? `
@@ -456,7 +456,6 @@
                                     `
                                 }).join('')}
                             </div>
-                            <button class="btn-add-spell" onclick="window.abrirModalMagia(${i})">+ Adicionar Magia</button>
                         </div>
                     </div>
                 `;
@@ -881,20 +880,7 @@
                 }
             }
         };
-/*
-        window.limparLog = async function() {
-            if(!confirm("Deseja apagar permanentemente o histórico de rolagens desta ficha?")) return;
-            try {
-                const q = query(collection(db, "rolagens"), where("fichaId", "==", FICHA_ID));
-                const snapshot = await getDocs(q);
-                const batch = writeBatch(db);
-                snapshot.forEach((doc) => batch.delete(doc.ref));
-                await batch.commit();
-            } catch (e) {
-                console.error("Erro ao limpar log:", e);
-            }
-        };*/
-
+        
         // Inicia tudo
         window.ouvirRolagens();
         window.carregarMagias();
