@@ -357,8 +357,10 @@
         <div class="dnd-box"><span class="dnd-box-label">ESCALADA</span><input type="text" id="char-speed-climb" class="dnd-box-value" value="0m"></div>
     </div>
 
-    <div style="margin: 10px 0;">
-        <button class="btn-back" id="btn-ir-magias" style="width: 100%; background: #5e35b1; color: white; border: none; font-weight: bold; padding: 10px;">Lista de Magias</button>
+    <div>
+        <button class="btn-back" id="btn-ir-magias" style="width: 33%; background: #5e35b1; color: white; border: none; font-weight: bold; padding: 10px;">Lista de Magias</button>
+        <button class="btn-back" id="btn-ir-inventario" style="width: 32.6%; background: #750000; color: white; border: none; font-weight: bold; padding: 10px;">Inventário</button>
+        <button class="btn-back" id="btn-ir-feats" style="width: 33%; background: #217500; color: white; border: none; font-weight: bold; padding: 10px;">Feats</button>
     </div>
 
     <div class="hp-section">
@@ -422,6 +424,12 @@
         
         document.getElementById('btn-ir-magias').onclick = () => {
             window.location.href = `magias.html?id=${FICHA_ID}`;
+        };
+        document.getElementById('btn-ir-inventario').onclick = () => {
+            window.location.href = `inventario.html?id=${FICHA_ID}`;
+        };
+        document.getElementById('btn-ir-feats').onclick = () => {
+            window.location.href = `.html?id=${FICHA_ID}`;
         };
 
         // Atualiza o título da página para o nome do personagem
