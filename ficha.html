@@ -881,7 +881,7 @@
                     entry.innerHTML = `
                         <div class="log-header">
                             <span>${roll.personagem}</span>
-                            <span>${roll.nome} (${roll.tipo})</span>
+                            <span>${roll.nome} (${roll.tipo || roll.resultado})</span>
                         </div>
                         <div class="log-details">${roll.detalhes}</div>
                         <div class="log-result">Total: ${roll.resultado}</div>
