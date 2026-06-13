@@ -172,7 +172,7 @@
         <div class="weight-info">
             <div style="display:flex; justify-content:space-between; font-weight:bold;">
                 <span>Carga Atual</span>
-                <span><span id="current-weight">0</span> / <span id="max-weight">75</span> kg</span>
+                <span><span id="current-weight">0</span> / <span id="max-weight">75</span> lb.</span>
             </div>
             <div class="weight-bar">
                 <div id="weight-fill"></div>
@@ -197,11 +197,11 @@
             <h3 id="modal-titulo">Novo Item</h3>
             <input type="text" id="item-nome" placeholder="Nome do Item (ex: Espada Longa)">
             <textarea id="item-desc" placeholder="Descrição ou Função" rows="3"></textarea>
-            <input type="number" id="item-peso" placeholder="Peso em kg (ex: 2.5)" step="0.1">
+            <input type="number" id="item-peso" placeholder="Peso em lb. (ex: 2.5)" step="0.1">
             
             <div style="background:#eee; padding:10px; border-radius:4px; margin: 10px 0;">
                 <label style="font-size:0.9rem; font-weight:bold; display:block; margin-bottom:5px;">
-                    <input type="checkbox" id="item-tem-ataque" onchange="document.getElementById('config-ataque').style.display = this.checked ? 'block' : 'none'"> Possui Rolagem de Ataque?
+                    Possui Rolagem de Ataque?<input type="checkbox" id="item-tem-ataque" onchange="document.getElementById('config-ataque').style.display = this.checked ? 'block' : 'none'">
                 </label>
                 <div id="config-ataque" style="display:none; margin-top:10px; border-top:1px solid #ccc; padding-top:10px;">
                     <label style="font-size:0.85rem;">Atributo do Ataque:</label>
@@ -214,7 +214,8 @@
                         <option value="carisma">Carisma</option>
                     </select>
                     <label style="font-size:0.85rem; font-weight:bold;">
-                        <input type="checkbox" id="item-prof-ataque"> Somar Bônus de Proficiência?
+                        <div style="width: auto;"><div>Somar Bônus de Proficiência?</div><div><input type="checkbox" id="item-prof-ataque"></div></div>
+                        
                     </label>
                 </div>
             </div>
@@ -270,7 +271,7 @@
             document.getElementById('item-peso').value = '';
             document.getElementById('item-tem-ataque').checked = false;
             document.getElementById('item-attr-ataque').value = '';
-            document.getElementById('item-prof-ataque').checked = false;
+            document.getElementById('item-prof-ataque').checked = true;
             document.getElementById('config-ataque').style.display = 'none';
         };
 
@@ -286,7 +287,7 @@
             // Dados do Ataque
             document.getElementById('item-tem-ataque').checked = item.temAtaque || false;
             document.getElementById('item-attr-ataque').value = item.attrAtaque || '';
-            document.getElementById('item-prof-ataque').checked = item.profAtaque || false;
+            document.getElementById('item-prof-ataque').checked = item.profAtaque || true;
             document.getElementById('config-ataque').style.display = item.temAtaque ? 'block' : 'none';
             
             window.rolagensDanoItemAtual = item.rolagensDano ? JSON.parse(JSON.stringify(item.rolagensDano)) : [];
@@ -410,7 +411,7 @@
                     <div class="item-card">
                         <div class="item-row">
                             <span>${item.nome}</span>
-                            <span>${item.peso} kg</span>
+                            <span>${item.peso} lb.</span>
                         </div>
                         ${item.desc ? `<div class="item-desc">${item.desc}</div>` : ''}
                         <div class="item-actions">
